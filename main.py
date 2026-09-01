@@ -2,7 +2,8 @@ from email_analyzer import (
     get_input,
     read_eml_file,
     split_headers_body,
-    print_first_headers
+    print_first_headers,
+    parse_headers
 )
 
 def main():
@@ -35,6 +36,33 @@ def main():
             print(f"  {display_line}")
     else:
         print("\n📝 No body content found")
+
+    print("\n" + "="*70)
+    print("📧 PHASE 2: Header Parsing")
+    print("="*70)
+    headers = parse_headers(header)
+    print(f"\n📋 Parsed Headers ({len(headers)} unique headers):")
+    important = ['from', 'to', 'subject', 'date', 'return-path', 
+                 'authentication-results', 'message-id']
+    print("\n📌 Important Headers:")
+    for key in important:
+        if key in headers:
+            value = headers[key]
+            if isinstance(value, list):
+                print(f"  {key}: [{len(value)} entries]")
+            else:
+                display_value = value[:80] + "..." if len(value) > 80 else value
+                print(f"  {key}: {display_value}")
+    other_headers = [k for k in headers.keys() if k not in important]
+    if other_headers:
+        print(f"\n📌 Other Headers ({len(other_headers)}):")
+        for key in sorted(other_headers):
+            value = headers[key]
+            if isinstance(value, list):
+                print(f"  {key}: [{len(value)} entries]")
+            else:
+                display_value = value[:60] + "..." if len(value) > 60 else value
+                print(f"  {key}: {display_value}")
 
     print("\n✅ Email analysis complete!")
 

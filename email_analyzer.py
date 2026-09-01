@@ -45,7 +45,6 @@ def split_headers_body(content: str) -> Tuple[str, str, int, int]:
     return header, body, len(header_lines), len(body_lines)
 
 def print_first_headers(header: str, count: int = 5) -> None:
-    """Print first N headers from header string."""
     lines = header.splitlines()
     actual_count = min(count, len(lines))
     print(f"\n📋 First {actual_count} Headers:")
@@ -54,3 +53,54 @@ def print_first_headers(header: str, count: int = 5) -> None:
         print(f"{i}. {display_line}")
     if len(lines) > count:
         print(f"... and {len(lines) - count} more headers")
+
+def is_folded_line(line: str) -> bool:
+    return line.startswith((' ', '\t'))
+
+def clean_header_key(key: str) -> str:
+    return key.lower().strip()
+
+def clean_header_value(value: str) -> str:
+    cleaned = ' '.join(value.split())
+    return cleaned
+
+def add_to_header_dict(headers: Dict[str, Union[str, List[str]]], 
+    key: str, 
+    value: str) -> None:
+    if key in headers:
+        if isinstance(headers[key], list):
+            headers[key].append(value)
+        else:
+            headers[key] = [headers[key], value]
+    else:
+        headers[key] = value
+
+def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
+    if not header_string:
+        return {}
+    headers = {}
+    current_key = None
+    current_value = None
+    lines = header_string.splitlines()
+    for i, line in enumerate(lines):
+        if is_folded_line(line):
+            if current_key is not None and current_value is not None:
+                current_value += " " + line.strip()
+        else:
+            if current_key is not None and current_value is not None:
+                add_to_header_dict(headers, 
+                    clean_header_key(current_key), 
+                    clean_header_value(current_value))
+            if ':' in line:
+                key, value = line.split(':', 1)
+                current_key = key
+                current_value = value.strip()
+            else:
+                print(f"⚠️ Warning: Malformed header line: {line[:50]}...")
+                current_key = None
+                current_value = None
+    if current_key is not None and current_value is not None:
+        add_to_header_dict(headers, 
+            clean_header_key(current_key), 
+            clean_header_value(current_value))
+    return headers
