@@ -58,7 +58,8 @@ def is_folded_line(line: str) -> bool:
     return line.startswith((' ', '\t'))
 
 def clean_header_key(key: str) -> str:
-    key = key.rstrip(':')
+    if key.endswith(':'):
+        key = key[:-1]
     return key.lower().strip()
 
 def clean_header_value(value: str) -> str:
