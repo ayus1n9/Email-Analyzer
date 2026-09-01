@@ -83,6 +83,8 @@ def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
     current_value = None
     lines = header_string.splitlines()
     for i, line in enumerate(lines):
+        if not line.strip():
+            continue
         if is_folded_line(line):
             if current_key is not None and current_value is not None:
                 current_value += " " + line.strip()
@@ -93,7 +95,7 @@ def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
                     clean_header_value(current_value))
             if ':' in line:
                 key, value = line.split(':', 1)
-                current_key = key
+                current_key = key.strip()
                 current_value = value.strip()
             else:
                 print(f"⚠️ Warning: Malformed header line: {line[:50]}...")
@@ -101,8 +103,9 @@ def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
                 current_value = None
     if current_key is not None and current_value is not None:
         add_to_header_dict(headers, 
-            clean_header_key(current_key), 
-            clean_header_value(current_value))
+                         clean_header_key(current_key), 
+                         clean_header_value(current_value))
+    
     return headers
 
 def extract_email_domain(email: str) -> Optional[str]:
@@ -349,4 +352,74 @@ def analyze_headers(headers: Dict) -> Dict:
         'headers_analyzed': list(headers.keys())
     }
 
-
+def generate_report(filepath: str, content: str, headers: Dict, analysis: Dict, header_lines: int, body_lines: int) -> None:
+    print("\n" + "="*70)
+    print("📧 EMAIL HEADER ANALYZER - COMPLETE ANALYSIS REPORT")
+    print("="*70)
+    print(f"\n📁 FILE INFORMATION")
+    print("-" * 70)
+    print(f"File: {filepath}")
+    print(f"Size: {len(content)} bytes")
+    print(f"Total Lines: {len(content.splitlines())}")
+    print(f"Header Lines: {header_lines}")
+    print(f"Body Lines: {body_lines}")
+    print(f"\n📋 HEADER SUMMARY")
+    print("-" * 70)
+    print(f"Total Unique Headers: {len(headers)}")
+    print(f"\n🔒 SECURITY ANALYSIS SUMMARY")
+    print("-" * 70)
+    summary = analysis['summary']
+    print(f"Total Findings: {summary['total_findings']}")
+    print(f"Max Severity: {summary['max_severity'].upper()}")
+    print(f"Overall Risk Level: {summary['overall_risk'].upper()}")
+    print(f"Risk Score: {summary['risk_score']}")
+    if analysis['findings']:
+        print(f"\n⚠️ DETAILED FINDINGS")
+        print("-" * 70)
+        for i, finding in enumerate(analysis['findings'], 1):
+            severity_color = {
+                'high': '🔴',
+                'medium': '🟡',
+                'low': '🟢'
+            }.get(finding['severity'], '⚪')
+            print(f"\n{i}. {finding['check']}")
+            print(f"   Severity: {severity_color} {finding['severity'].upper()}")
+            if isinstance(finding['details'], dict):
+                for key, value in finding['details'].items():
+                    if isinstance(value, list):
+                        print(f"   {key.capitalize()}:")
+                        for item in value:
+                            print(f"     - {item}")
+                    else:
+                        print(f"   {key.capitalize()}: {value}")
+            else:
+                print(f"   Details: {finding['details']}")
+    else:
+        print("\n✅ No security issues found!")
+    print(f"\n💡 RECOMMENDED ACTIONS")
+    print("-" * 70)
+    if summary['overall_risk'] == 'high':
+        print("🔴 HIGH RISK - Immediate action required:")
+        print("   • Do NOT click any links or download attachments")
+        print("   • Do NOT reply to the email")
+        print("   • Report to your security team")
+        print("   • Delete the email after reporting")
+    elif summary['overall_risk'] == 'medium':
+        print("🟡 MEDIUM RISK - Exercise caution:")
+        print("   • Be cautious when interacting with this email")
+        print("   • Verify sender identity through other channels")
+        print("   • Check for suspicious links before clicking")
+    elif summary['overall_risk'] == 'low':
+        print("🟢 LOW RISK - Minor concerns:")
+        print("   • Review the specific findings above")
+        print("   • Consider if this aligns with expected behavior")
+    else:
+        print("✅ NO RISK - Email appears legitimate")
+        print("   • No security concerns detected")
+        print("   • Follow normal email safety practices")
+    print(f"\n📊 HEADERS ANALYZED")
+    print("-" * 70)
+    print(", ".join(sorted(analysis['headers_analyzed'])))
+    print("\n" + "="*70)
+    print("📧 Analysis Complete!")
+    print("="*70 + "\n")
