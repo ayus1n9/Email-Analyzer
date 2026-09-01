@@ -4,7 +4,8 @@ from email_analyzer import (
     split_headers_body,
     print_first_headers,
     parse_headers,
-    analyze_headers
+    analyze_headers,
+    generate_report
 )
 
 def main():
@@ -97,6 +98,10 @@ def main():
                 print(f"     Details: {finding['details']}")
     else:
         print(f"\n✅ No security issues detected!")
+    print("\n" + "="*70)
+    print("📧 PHASE 4: Complete Report")
+    print("="*70)
+    generate_report(filepath, content, headers, analysis, header_lines, body_lines)
 
     print("\n✅ Email analysis complete!")
 
