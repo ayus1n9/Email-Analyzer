@@ -3,7 +3,8 @@ from email_analyzer import (
     read_eml_file,
     split_headers_body,
     print_first_headers,
-    parse_headers
+    parse_headers,
+    analyze_headers
 )
 
 def main():
@@ -63,6 +64,39 @@ def main():
             else:
                 display_value = value[:60] + "..." if len(value) > 60 else value
                 print(f"  {key}: {display_value}")
+
+    print("\n" + "="*70)
+    print("📧 PHASE 3: Security Analysis")
+    print("="*70)
+    analysis = analyze_headers(headers)
+    summary = analysis['summary']
+    print(f"\n🔒 Analysis Summary:")
+    print(f"  - Total Findings: {summary['total_findings']}")
+    print(f"  - Max Severity: {summary['max_severity'].upper()}")
+    print(f"  - Overall Risk Level: {summary['overall_risk'].upper()}")
+    print(f"  - Risk Score: {summary['risk_score']}/10")
+    if analysis['findings']:
+        print(f"\n⚠️ Security Findings:")
+        for i, finding in enumerate(analysis['findings'], 1):
+            severity_icon = {
+                'high': '🔴',
+                'medium': '🟡',
+                'low': '🟢'
+            }.get(finding['severity'], '⚪')
+            print(f"\n  {i}. {finding['check']}")
+            print(f"     {severity_icon} Severity: {finding['severity'].upper()}")
+            if isinstance(finding['details'], dict):
+                for key, value in finding['details'].items():
+                    if isinstance(value, list):
+                        print(f"     {key.capitalize()}:")
+                        for item in value:
+                            print(f"       - {item}")
+                    else:
+                        print(f"     {key.capitalize()}: {value}")
+            else:
+                print(f"     Details: {finding['details']}")
+    else:
+        print(f"\n✅ No security issues detected!")
 
     print("\n✅ Email analysis complete!")
 
