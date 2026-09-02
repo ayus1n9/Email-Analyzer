@@ -1,42 +1,50 @@
 # 📧 Email Header Analyzer
 
-A comprehensive Python tool to parse and analyze email headers (.eml files) for phishing indicators and security threats.
+[![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://img.shields.io/badge/tests-13%20passing-brightgreen.svg)](https://github.com/ayus1n9/email-header-analyzer)
 
-## 🚀 Features
+> **A Python tool to parse and analyze email headers (.eml files) for phishing detection, spoofing attempts, and security threats.**
 
-### Phase 1: File Processing
-- Read .eml files with error handling
-- Split headers from email body
-- Display email statistics
+---
 
-### Phase 2: Header Parsing
-- Parse headers into structured dictionary
-- Handle folded header lines
-- Manage duplicate headers (e.g., multiple Received entries)
-- Normalize header keys (case-insensitive)
+## 🔍 What It Does
 
-### Phase 3: Security Analysis
-- Check "From" vs "Return-Path" domain mismatch
-- Analyze SPF/DKIM authentication results
-- Track "Received" chain for unusual hops
-- Check for date anomalies
-- Generate risk assessment with severity levels
+Email Header Analyzer parses `.eml` files and performs comprehensive security analysis including:
 
-### Phase 4: Report Generation
-- Comprehensive security report
-- Risk level assessment (Low/Medium/High)
-- Recommended actions
-- Detailed findings with explanations
+- ✅ **File Processing** - Read .eml files with error handling
+- ✅ **Header Parsing** - Parse headers into structured dictionary
+- ✅ **Security Analysis** - Detect phishing indicators and spoofing
+- ✅ **Risk Assessment** - Generate detailed reports with severity levels
+- ✅ **Unit Tests** - 13 passing test cases
+
+---
+
+## 🚨 Security Checks Performed
+
+| Check | Description | Severity |
+|-------|-------------|----------|
+| **From vs Return-Path** | Domain mismatch detection | 🔴 High |
+| **SPF Authentication** | Sender Policy Framework check | 🔴 High |
+| **DKIM Authentication** | DomainKeys Identified Mail check | 🔴 High |
+| **Received Chain** | Hop count and suspicious patterns | 🟡 Medium |
+| **Date Anomaly** | Future dates or very old emails | 🟡 Medium |
+| **Critical Headers** | Missing required headers | 🟡 Medium |
+
+---
 
 ## 📋 Requirements
 
-- Python 3.6 or higher- No external dependencies (uses only standard library)
+- Python 3.6 or higher
+- No external dependencies (uses only standard library)
+
+---
 
 ## 🛠️ Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/email-header-analyzer.git
+git clone https://github.com/ayus1n9/email-header-analyzer.git
 
 # Navigate to project directory
 cd email-header-analyzer
