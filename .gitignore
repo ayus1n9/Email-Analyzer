@@ -1,16 +1,18 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
+# Virtual Environment
 venv/
 env/
 ENV/
-.venv/
+env.bak/
+venv.bak/
 pythonenv*
+.venv/
 
-# IDEs and editors
+# IDE settings
 .vscode/
 .idea/
 *.swp
@@ -18,43 +20,28 @@ pythonenv*
 *~
 .DS_Store
 
-# Email files and sensitive test data
+# Project specific
 *.eml
-test_emails/
-samples/
-
-# Logs and temporary files
 *.log
 *.tmp
-*.temp
 *.bak
-*.backup
-
-# Databases
+*.test
 *.db
 *.sqlite
+
+# Test email files (contains sensitive data)
+test_emails/
+samples/
+!sample.eml
 
 # Testing
 .pytest_cache/
 .coverage
-.coverage.*
 htmlcov/
 .tox/
+.coverage.*
 coverage.xml
 *.cover
-
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Environment variables / secrets
-.env
-.env.local
-.env.*.local
 
 # Distribution / packaging
 dist/
@@ -63,15 +50,46 @@ build/
 *.egg
 MANIFEST
 
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Backup files
+*.bak
+*.tmp
+*.temp
+*.backup
+
 # OS generated files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 
-# Node.js
+# Logs
+logs/
+*.log
+
+# Report outputs (optional - uncomment if needed)
+# reports/
+# *.html
+# *.json
+# *.csv
+
+# Node modules (if using any frontend)
 node_modules/
 npm-debug.log*
 
 # Docker
+*.dockerignore
+Dockerfile*
 .docker/
