@@ -44,7 +44,7 @@ Email Header Analyzer parses `.eml` files and performs comprehensive security an
 
 ```bash
 # Clone the repository
-git clone https://github.com/ayus1n9/email-header-analyzer.git
+git clone https://github.com/ayus1n9/email-analyzer.git
 
 # Navigate to project directory
 cd email-header-analyzer
