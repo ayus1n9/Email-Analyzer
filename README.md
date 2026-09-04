@@ -47,7 +47,7 @@ Email Header Analyzer parses `.eml` files and performs comprehensive security an
 git clone https://github.com/ayus1n9/email-analyzer.git
 
 # Navigate to project directory
-cd email-header-analyzer
+cd email-analyzer
 
 # (Optional) Create virtual environment
 python -m venv venv
