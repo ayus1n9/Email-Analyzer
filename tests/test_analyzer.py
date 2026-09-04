@@ -18,9 +18,12 @@ from email_analyzer import (
     check_from_vs_return_path,
     check_spf_dkim,
     analyze_received_chain,
-    analyze_headers
+    analyze_headers,
+    analyze_display_name,
+    analyze_subject,
+    analyze_urls,
+    check_reply_to_spoofing    
 )
-
 
 class TestPhase1(unittest.TestCase):
     def test_clean_header_key(self):
@@ -50,7 +53,6 @@ class TestPhase1(unittest.TestCase):
         self.assertFalse(
             is_folded_line("New header: value")
         )
-
 
 class TestPhase2(unittest.TestCase):
     def test_parse_headers_simple(self):
@@ -132,7 +134,6 @@ class TestPhase2(unittest.TestCase):
             headers.get("subject"),
             "Test"
         )
-
 
 class TestPhase3(unittest.TestCase):
     def test_extract_email_domain(self):
@@ -267,7 +268,6 @@ class TestPhase3(unittest.TestCase):
             list
         )
 
-
 class TestIntegration(unittest.TestCase):
     def test_full_pipeline(self):
         test_email = """From: test@example.com
@@ -319,7 +319,133 @@ class TestIntegration(unittest.TestCase):
             len(headers.get("received", [])),
             1
         )
+class TestDay1Features(unittest.TestCase):
+    def test_analyze_urls_normal(self):
+        body = "Check this link: https://example.com"
+        result = analyze_urls(body)
+        self.assertEqual(result['url_count'], 1)
+        self.assertEqual(len(result['suspicious_urls']), 0)
+        self.assertEqual(len(result['shortened_urls']), 0)
+    
+    def test_analyze_urls_suspicious(self):
+        body = "Verify here: http://bit.ly/verify-account"
+        result = analyze_urls(body)
+        self.assertEqual(result['url_count'], 1)
+        self.assertEqual(len(result['suspicious_urls']), 1)
+        self.assertEqual(len(result['shortened_urls']), 1)
+    
+    def test_analyze_urls_ip(self):
+        body = "Click: http://192.168.1.1/phishing"
+        result = analyze_urls(body)
+        self.assertEqual(result['url_count'], 1)
+        self.assertEqual(len(result['suspicious_urls']), 1)
+        self.assertEqual(len(result['ip_urls']), 1)
+    
+    def test_analyze_subject_normal(self):
+        subject = "Your order #12345 confirmation"
+        result = analyze_subject(subject)
+        self.assertFalse(result['is_suspicious'])
+        self.assertEqual(result['keyword_count'], 0)
+    
+    def test_analyze_subject_urgent(self):
+        subject = "URGENT: Your account needs immediate attention"
+        result = analyze_subject(subject)
+        self.assertTrue(result['is_suspicious'])
+        self.assertIn('urgency', result['flags'])
+    
+    def test_analyze_subject_threat(self):
+        subject = "Your account has been suspended - Action Required"
+        result = analyze_subject(subject)
+        self.assertTrue(result['is_suspicious'])
+        self.assertIn('threat', result['flags'])
+    
+    def test_analyze_subject_financial(self):
+        subject = "Important: Verify your bank account information"
+        result = analyze_subject(subject)
+        self.assertTrue(result['is_suspicious'])
+        self.assertIn('financial', result['flags'])
+    
+    def test_check_reply_to_spoofing_legitimate(self):
+        headers = {
+            'from': 'user@example.com',
+            'reply-to': 'user@example.com'
+        }
+        result = check_reply_to_spoofing(headers)
+        self.assertFalse(result['flag'])
+    
+    def test_check_reply_to_spoofing_suspicious(self):
+        headers = {
+            'from': 'support@amazon.com',
+            'reply-to': 'hacker@gmail.com'
+        }
+        result = check_reply_to_spoofing(headers)
+        self.assertTrue(result['flag'])
+        self.assertEqual(result['severity'], 'high')
+    
+    def test_check_reply_to_spoofing_no_header(self):
+        headers = {
+            'from': 'user@example.com'
+        }
+        result = check_reply_to_spoofing(headers)
+        self.assertFalse(result['flag'])
+    
+    def test_analyze_display_name_legitimate(self):
+        headers = {
+            'from': 'John Doe <john@company.com>'
+        }
+        result = analyze_display_name(headers)
+        self.assertFalse(result['flag'])
+    
+    def test_analyze_display_name_suspicious(self):
+        headers = {
+            'from': '"PayPal Support" <scammer@gmail.com>'
+        }
+        result = analyze_display_name(headers)
+        self.assertTrue(result['flag'])
+        self.assertEqual(result['severity'], 'high')
+    
+    def test_analyze_display_name_free_email(self):
+        headers = {
+            'from': '"Admin Team" <admin@gmail.com>'
+        }
+        result = analyze_display_name(headers)
+        self.assertTrue(result['flag'])
+    
+    def test_analyze_display_name_no_display_name(self):
+        headers = {
+            'from': 'user@example.com'
+        }
+        result = analyze_display_name(headers)
+        self.assertFalse(result['flag'])
+class TestDay1Integration(unittest.TestCase):
+    def test_full_pipeline_with_suspicious_email(self):
+        test_email = """From: "PayPal Support" <scammer@gmail.com>
+        Reply-To: hacker@gmail.com
+        Subject: URGENT: Your Account Will Be Suspended
+        Return-Path: <scammer@gmail.com>
+        Date: Mon, 1 Jan 2026 10:00:00 +0000
 
+        Dear Customer,
+
+        Your PayPal account has been flagged for suspicious activity.
+        Please verify your account immediately:
+        http://bit.ly/verify-paypal-account
+
+        Thank you,
+        PayPal Team"""
+        
+        header, body, h, b = split_headers_body(test_email)
+        headers = parse_headers(header)
+        analysis = analyze_headers(headers, body)
+        
+        self.assertGreaterEqual(analysis['summary']['total_findings'], 3)
+        self.assertEqual(analysis['summary']['overall_risk'], 'high')
+        
+        finding_names = [f['check'] for f in analysis['findings']]
+        self.assertIn('Suspicious URLs Detected', finding_names)
+        self.assertIn('Suspicious Subject Line', finding_names)
+        self.assertIn('Reply-To Spoofing', finding_names)
+        self.assertIn('Suspicious Display Name', finding_names)
 
 if __name__ == "__main__":
     unittest.main()

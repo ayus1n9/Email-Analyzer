@@ -1,12 +1,11 @@
+import config as Config
 import re
 from typing import Optional, Dict, List, Union, Tuple
 from datetime import datetime, timezone
 
-
 def get_input() -> str:
     filepath = input("Enter the path to the .eml file: ").strip()
     return filepath
-
 
 def read_eml_file(filepath: str) -> Optional[str]:
     if not filepath.lower().endswith(".eml"):
@@ -40,7 +39,6 @@ def read_eml_file(filepath: str) -> Optional[str]:
         print(f"❌ Unexpected error: {e}")
         return None
 
-
 def split_headers_body(content: str) -> Tuple[str, str, int, int]:
     if not content:
         return "", "", 0, 0
@@ -59,7 +57,6 @@ def split_headers_body(content: str) -> Tuple[str, str, int, int]:
 
     return header, body, len(header_lines), len(body_lines)
 
-
 def print_first_headers(header: str, count: int = 5) -> None:
     lines = header.splitlines()
     actual_count = min(count, len(lines))
@@ -73,19 +70,211 @@ def print_first_headers(header: str, count: int = 5) -> None:
     if len(lines) > count:
         print(f"... and {len(lines) - count} more headers")
 
-
 def is_folded_line(line: str) -> bool:
     return line.startswith((" ", "\t"))
-
 
 def clean_header_key(key: str) -> str:
     key = key.rstrip(":")
     return key.lower().strip()
 
-
 def clean_header_value(value: str) -> str:
     return " ".join(value.split())
 
+def analyze_urls(body: str) -> Dict:
+    if not body:
+        return {
+            'url_count': 0,
+            'suspicious_urls': [],
+            'shortened_urls': [],
+            'all_urls': [],
+            'ip_urls': []
+        }
+    
+    url_pattern = r'https?://[^\s<>"\'{}|\\^`\[\]]+'
+    urls = re.findall(url_pattern, body)
+    
+    if not urls:
+        return {
+            'url_count': 0,
+            'suspicious_urls': [],
+            'shortened_urls': [],
+            'all_urls': [],
+            'ip_urls': []
+        }
+    
+    suspicious_urls = []
+    shortened_urls = []
+    ip_urls = []
+    
+    for url in urls:
+        url_lower = url.lower()
+        if any(shortener in url_lower for shortener in Config.URL_SHORTENERS):
+            shortened_urls.append(url)
+            suspicious_urls.append(url)
+        if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', url):
+            ip_urls.append(url)
+            suspicious_urls.append(url)
+        if any(url_lower.endswith(tld) for tld in Config.SUSPICIOUS_TLDS):
+            suspicious_urls.append(url)
+        for sus in Config.SUSPICIOUS_DOMAINS:
+            if sus in url_lower:
+                suspicious_urls.append(url)
+                break
+    suspicious_urls = list(dict.fromkeys(suspicious_urls))
+    
+    return {
+        'url_count': len(urls),
+        'suspicious_urls': suspicious_urls,
+        'shortened_urls': shortened_urls,
+        'ip_urls': ip_urls,
+        'all_urls': urls
+    }
+
+def analyze_subject(subject: str) -> Dict:
+    if not subject:
+        return {
+            'is_suspicious': False,
+            'flags': [],
+            'keyword_count': 0,
+            'severity': 'low'
+        }
+    
+    subject_lower = subject.lower()
+    flags = []
+    if any(keyword in subject_lower for keyword in Config.URGENCY_KEYWORDS):
+        flags.append('urgency')
+    if any(keyword in subject_lower for keyword in Config.FINANCIAL_KEYWORDS):
+        flags.append('financial')
+    if any(keyword in subject_lower for keyword in Config.THREAT_KEYWORDS):
+        flags.append('threat')
+    is_suspicious = len(flags) > 0
+    severity = 'low'
+    if is_suspicious:
+        severity = 'high' if 'threat' in flags else 'medium'
+    return {
+        'is_suspicious': is_suspicious,
+        'flags': flags,
+        'keyword_count': len(flags),
+        'severity': severity
+    }
+
+def check_reply_to_spoofing(headers: Dict) -> Dict:
+    from_header = headers.get("from", "")
+    reply_to = headers.get("reply-to", "")
+    if isinstance(from_header, list):
+        from_header = from_header[0] if from_header else ""
+    if isinstance(reply_to, list):
+        reply_to = reply_to[0] if reply_to else ""
+    if not reply_to:
+        return {
+            "flag": False,
+            "severity": "low",
+            "details": "No Reply-To header present",
+            "from_domain": None,
+            "reply_domain": None
+        }
+    from_domain = extract_email_domain(from_header)
+    reply_domain = extract_email_domain(reply_to)
+    if not from_domain or not reply_domain:
+        return {
+            "flag": False,
+            "severity": "low",
+            "details": "Could not extract domains for comparison",
+            "from_domain": from_domain,
+            "reply_domain": reply_domain
+        }
+    from_match = re.search(
+        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        from_header
+    )
+    reply_match = re.search(
+        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        reply_to
+    )
+    from_address = from_match.group(0).lower() if from_match else ""
+    reply_address = reply_match.group(0).lower() if reply_match else ""
+    if from_address != reply_address:
+        is_free_email = any(
+            provider in reply_domain
+            for provider in Config.FREE_EMAIL_PROVIDERS
+        )
+        if from_domain != reply_domain:
+            severity = "high" if is_free_email else "medium"
+            details = (
+                f"Reply-To domain ({reply_domain}) differs from "
+                f"From domain ({from_domain})"
+            )
+        else:
+            severity = "high" if is_free_email else "medium"
+            details = (
+                f"Reply-To address ({reply_address}) differs from "
+                f"From address ({from_address})"
+            )
+        return {
+            "flag": True,
+            "severity": severity,
+            "details": details,
+            "from_domain": from_domain,
+            "reply_domain": reply_domain
+        }
+    return {
+        "flag": False,
+        "severity": "low",
+        "details": f"Reply-To address matches From address ({from_address})",
+        "from_domain": from_domain,
+        "reply_domain": reply_domain
+    }
+
+def analyze_display_name(headers: Dict) -> Dict:
+    from_header = headers.get('from', '')
+    if not from_header:
+        return {
+            'flag': False,
+            'severity': 'low',
+            'details': 'No From header found',
+            'display_name': None,
+            'domain': None
+        }
+    name_match = re.search(r'^"?(.+?)"?\s*<', from_header)
+    if not name_match:
+        return {
+            'flag': False,
+            'severity': 'low',
+            'details': 'No display name found (email only)',
+            'display_name': None,
+            'domain': extract_email_domain(from_header)
+        }
+    display_name = name_match.group(1).strip()
+    domain = extract_email_domain(from_header)
+    flags = []
+    name_lower = display_name.lower()
+    if any(keyword in name_lower for keyword in Config.IMPERSONATION_KEYWORDS):
+        flags.append('impersonation_keyword')
+    if any(company in name_lower for company in Config.COMPANY_NAMES):
+        flags.append('company_name')
+    is_free_email = False
+    if domain:
+        is_free_email = any(provider in domain.lower() for provider in Config.FREE_EMAIL_PROVIDERS)
+    if is_free_email and flags:
+        flags.append('free_email_with_suspicious_name')
+    is_suspicious = len(flags) > 0
+    if not is_suspicious:
+        return {
+            'flag': False,
+            'severity': 'low',
+            'details': 'Display name appears legitimate',
+            'display_name': display_name,
+            'domain': domain
+        }
+    severity = 'high' if 'free_email_with_suspicious_name' in flags else 'medium'
+    return {
+        'flag': True,
+        'severity': severity,
+        'details': f'Display name "{display_name}" uses suspicious pattern with domain {domain}',
+        'display_name': display_name,
+        'domain': domain,
+        'flags': flags
+    }
 
 def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
     if not header_string:
@@ -96,8 +285,7 @@ def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
 
     current_key: Optional[str] = None
     current_value: List[str] = []
-
-    header_pattern = re.compile(r"^[!-9;-~]+:")
+    header_pattern = re.compile(r"^[^\s:]+:")
 
     def store_current_header() -> None:
         nonlocal current_key, current_value
@@ -154,7 +342,6 @@ def parse_headers(header_string: str) -> Dict[str, Union[str, List[str]]]:
 
     return headers
 
-
 def extract_email_domain(email: str) -> Optional[str]:
     if not email:
         return None
@@ -172,7 +359,6 @@ def extract_email_domain(email: str) -> Optional[str]:
             return parts[1].lower()
 
     return None
-
 
 def check_from_vs_return_path(headers: Dict) -> Dict:
     from_header = headers.get("from", "")
@@ -203,7 +389,6 @@ def check_from_vs_return_path(headers: Dict) -> Dict:
         "severity": "none",
         "details": f"Domains match: {from_domain}"
     }
-
 
 def check_spf_dkim(headers: Dict) -> Dict:
     auth_results = headers.get("authentication-results", "")
@@ -259,7 +444,6 @@ def check_spf_dkim(headers: Dict) -> Dict:
             "issues": flags if flags else ["All authentication passed"]
         }
     }
-
 
 def analyze_received_chain(headers: Dict) -> Dict:
     received_headers = headers.get("received", [])
@@ -324,7 +508,6 @@ def analyze_received_chain(headers: Dict) -> Dict:
             "last_hop": received_headers[-1] if received_headers else "None"
         }
     }
-
 
 def check_date_anomaly(headers: Dict) -> Dict:
     date_header = headers.get("date", "")
@@ -407,131 +590,136 @@ def check_date_anomaly(headers: Dict) -> Dict:
             "details": f"Could not analyze date: {str(e)}"
         }
 
-
-def analyze_headers(headers: Dict) -> Dict:
+def analyze_headers(headers: Dict, body: str = '') -> Dict:
     findings = []
-
-    severity_scores = {
-        "low": 1,
-        "medium": 2,
-        "high": 3
-    }
-
-    max_severity = "low"
+    severity_scores = {'low': 1, 'medium': 2, 'high': 3}
+    max_severity = 'low'
     total_score = 0
-
     result1 = check_from_vs_return_path(headers)
-
-    if result1["flag"]:
+    if result1['flag']:
         findings.append({
-            "check": "From vs Return-Path Mismatch",
-            "severity": result1["severity"],
-            "details": result1["details"]
+            'check': 'From vs Return-Path Mismatch',
+            'severity': result1['severity'],
+            'details': result1['details']
         })
-
-        max_severity = max(
-            max_severity,
-            result1["severity"],
-            key=lambda x: severity_scores.get(x, 0)
-        )
-
-        total_score += severity_scores.get(result1["severity"], 0)
-
+        max_severity = max(max_severity, result1['severity'], key=lambda x: severity_scores.get(x, 0))
+        total_score += severity_scores.get(result1['severity'], 0)
     result2 = check_spf_dkim(headers)
-
-    if result2["flag"]:
+    if result2['flag']:
         findings.append({
-            "check": "SPF/DKIM Authentication",
-            "severity": result2["severity"],
-            "details": result2["details"]
+            'check': 'SPF/DKIM Authentication',
+            'severity': result2['severity'],
+            'details': result2['details']
         })
-
-        max_severity = max(
-            max_severity,
-            result2["severity"],
-            key=lambda x: severity_scores.get(x, 0)
-        )
-
-        total_score += severity_scores.get(result2["severity"], 0)
-
+        max_severity = max(max_severity, result2['severity'], key=lambda x: severity_scores.get(x, 0))
+        total_score += severity_scores.get(result2['severity'], 0)
     result3 = analyze_received_chain(headers)
-
-    if result3["flag"]:
+    if result3['flag']:
         findings.append({
-            "check": "Received Chain Analysis",
-            "severity": result3["severity"],
-            "details": result3["details"]
+            'check': 'Received Chain Analysis',
+            'severity': result3['severity'],
+            'details': result3['details']
         })
-
-        max_severity = max(
-            max_severity,
-            result3["severity"],
-            key=lambda x: severity_scores.get(x, 0)
-        )
-
-        total_score += severity_scores.get(result3["severity"], 0)
-
+        max_severity = max(max_severity, result3['severity'], key=lambda x: severity_scores.get(x, 0))
+        total_score += severity_scores.get(result3['severity'], 0)
     result4 = check_date_anomaly(headers)
-
-    if result4["flag"]:
+    if result4['flag']:
         findings.append({
-            "check": "Date Anomaly",
-            "severity": result4["severity"],
-            "details": result4["details"]
+            'check': 'Date Anomaly',
+            'severity': result4['severity'],
+            'details': result4['details']
         })
-
-        max_severity = max(
-            max_severity,
-            result4["severity"],
-            key=lambda x: severity_scores.get(x, 0)
-        )
-
-        total_score += severity_scores.get(result4["severity"], 0)
-
-    critical_headers = [
-        "from",
-        "to",
-        "subject",
-        "date"
-    ]
-
-    missing = [
-        h for h in critical_headers
-        if h not in headers
-    ]
-
+        max_severity = max(max_severity, result4['severity'], key=lambda x: severity_scores.get(x, 0))
+        total_score += severity_scores.get(result4['severity'], 0)
+    critical_headers = ['from', 'to', 'subject', 'date']
+    missing = [h for h in critical_headers if h not in headers]
     if missing:
         findings.append({
-            "check": "Missing Critical Headers",
-            "severity": "medium",
-            "details": f"Missing: {', '.join(missing)}"
+            'check': 'Missing Critical Headers',
+            'severity': 'medium',
+            'details': f'Missing: {", ".join(missing)}'
         })
-
-        total_score += severity_scores["medium"]
-
-        if max_severity == "low":
-            max_severity = "medium"
-
+        total_score += severity_scores.get('medium', 0)
+        if max_severity == 'low':
+            max_severity = 'medium'
+    if body:
+        url_analysis = analyze_urls(body)
+        if url_analysis['suspicious_urls']:
+            details = {
+                'total_urls': url_analysis['url_count'],
+                'suspicious_count': len(url_analysis['suspicious_urls']),
+                'suspicious_urls': url_analysis['suspicious_urls'][:Config.MAX_SUSPICIOUS_URLS]
+            }
+            if url_analysis['shortened_urls']:
+                details['shortened_urls'] = url_analysis['shortened_urls'][:Config.MAX_URLS_TO_DISPLAY]
+            if url_analysis['ip_urls']:
+                details['ip_urls'] = url_analysis['ip_urls'][:Config.MAX_URLS_TO_DISPLAY]
+            findings.append({
+                'check': 'Suspicious URLs Detected',
+                'severity': 'high',
+                'details': details
+            })
+            total_score += 3
+            max_severity = 'high'
+    subject_analysis = analyze_subject(headers.get('subject', ''))
+    if subject_analysis['is_suspicious']:
+        findings.append({
+            'check': 'Suspicious Subject Line',
+            'severity': subject_analysis['severity'],
+            'details': {
+                'flags': subject_analysis['flags'],
+                'keyword_count': subject_analysis['keyword_count']
+            }
+        })
+        total_score += severity_scores.get(subject_analysis['severity'], 0)
+        if subject_analysis['severity'] == 'high' and max_severity != 'high':
+            max_severity = 'high'
+    reply_to_check = check_reply_to_spoofing(headers)
+    if reply_to_check['flag']:
+        findings.append({
+            'check': 'Reply-To Spoofing',
+            'severity': reply_to_check['severity'],
+            'details': {
+                'message': reply_to_check['details'],
+                'from_domain': reply_to_check['from_domain'],
+                'reply_domain': reply_to_check['reply_domain']
+            }
+        })
+        total_score += severity_scores.get(reply_to_check['severity'], 0)
+        if reply_to_check['severity'] == 'high' and max_severity != 'high':
+            max_severity = 'high'
+    display_name_check = analyze_display_name(headers)
+    if display_name_check['flag']:
+        findings.append({
+            'check': 'Suspicious Display Name',
+            'severity': display_name_check['severity'],
+            'details': {
+                'message': display_name_check['details'],
+                'display_name': display_name_check['display_name'],
+                'domain': display_name_check['domain']
+            }
+        })
+        total_score += severity_scores.get(display_name_check['severity'], 0)
+        if display_name_check['severity'] == 'high' and max_severity != 'high':
+            max_severity = 'high'
     if total_score >= 5:
-        overall_risk = "high"
+        overall_risk = 'high'
     elif total_score >= 3:
-        overall_risk = "medium"
+        overall_risk = 'medium'
     elif total_score >= 1:
-        overall_risk = "low"
+        overall_risk = 'low'
     else:
-        overall_risk = "none"
-
+        overall_risk = 'none'
     return {
-        "summary": {
-            "total_findings": len(findings),
-            "max_severity": max_severity,
-            "overall_risk": overall_risk,
-            "risk_score": total_score
+        'summary': {
+            'total_findings': len(findings),
+            'max_severity': max_severity,
+            'overall_risk': overall_risk,
+            'risk_score': total_score
         },
-        "findings": findings,
-        "headers_analyzed": list(headers.keys())
+        'findings': findings,
+        'headers_analyzed': list(headers.keys())
     }
-
 
 def generate_report(
     filepath: str,
