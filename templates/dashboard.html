@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container dashboard-container">
+    <h1>📈 Analytics Dashboard</h1>
+    <p>Overview of all email analyses</p>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.total_scans }}</span>
+            <span class="stat-label">Total Scans</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.average_risk_score }}</span>
+            <span class="stat-label">Average Risk Score</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.risk_distribution.get('high', 0) }}</span>
+            <span class="stat-label">High Risk</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ stats.risk_distribution.get('none', 0) }}</span>
+            <span class="stat-label">Safe Emails</span>
+        </div>
+    </div>
+
+    <div class="risk-chart">
+        <h2>Risk Distribution</h2>
+        <div class="chart-bars">
+            <div class="bar-container">
+                <span>High</span>
+                <div class="bar-track">
+                    <div class="bar" style="width: {{ (stats.risk_distribution.get('high', 0) / stats.total_scans * 100) if stats.total_scans > 0 else 0 }}%; background: #dc3545;"></div>
+                </div>
+                <span>{{ stats.risk_distribution.get('high', 0) }}</span>
+            </div>
+            <div class="bar-container">
+                <span>Medium</span>
+                <div class="bar-track">
+                    <div class="bar" style="width: {{ (stats.risk_distribution.get('medium', 0) / stats.total_scans * 100) if stats.total_scans > 0 else 0 }}%; background: #ffc107;"></div>
+                </div>
+                <span>{{ stats.risk_distribution.get('medium', 0) }}</span>
+            </div>
+            <div class="bar-container">
+                <span>Low</span>
+                <div class="bar-track">
+                    <div class="bar" style="width: {{ (stats.risk_distribution.get('low', 0) / stats.total_scans * 100) if stats.total_scans > 0 else 0 }}%; background: #28a745;"></div>
+                </div>
+                <span>{{ stats.risk_distribution.get('low', 0) }}</span>
+            </div>
+            <div class="bar-container">
+                <span>None</span>
+                <div class="bar-track">
+                    <div class="bar" style="width: {{ (stats.risk_distribution.get('none', 0) / stats.total_scans * 100) if stats.total_scans > 0 else 0 }}%; background: #17a2b8;"></div>
+                </div>
+                <span>{{ stats.risk_distribution.get('none', 0) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="recent-scans">
+        <h2>📋 Recent Scans</h2>
+        {% if stats.latest_scan %}
+            <table class="scan-table">
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Analyzed</th>
+                        <th>Risk</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ stats.latest_scan.filename }}</td>
+                        <td>{{ stats.latest_scan.analyzed_at[:19] }}</td>
+                        <td>
+                            <span class="risk-badge-small risk-{{ stats.latest_scan.overall_risk }}">
+                                {{ stats.latest_scan.overall_risk.upper() }}
+                            </span>
+                        </td>
+                        <td>{{ stats.latest_scan.risk_score }}/10</td>
+                    </tr>
+                </tbody>
+            </table>
+        {% else %}
+            <p>No scans yet.</p>
+        {% endif %}
+        <a href="/history" class="btn">View All History</a>
+    </div>
+
+    <div class="actions">
+        <a href="/" class="btn">📤 Upload Email</a>
+        <a href="/batch" class="btn btn-secondary">📦 Batch Upload</a>
+    </div>
+</div>
+{% endblock %}

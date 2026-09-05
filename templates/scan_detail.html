@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Details - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container scan-detail-container">
+    <h1>📄 Scan Details</h1>
+    <p>Analysis results for: <strong>{{ scan.filename }}</strong></p>
+
+    <div class="scan-meta">
+        <p><strong>Analyzed:</strong> {{ scan.analyzed_at[:19] }}</p>
+        <p><strong>File Size:</strong> {{ (scan.file_size / 1024)|round(1) if scan.file_size else 0 }} KB</p>
+        <p><strong>Risk Level:</strong> 
+            <span class="risk-badge risk-{{ scan.overall_risk }}">
+                {{ scan.overall_risk.upper() }}
+            </span>
+        </p>
+        <p><strong>Risk Score:</strong> {{ scan.risk_score }}/10</p>
+        <p><strong>Total Findings:</strong> {{ scan.total_findings }}</p>
+        <p><strong>Headers Analyzed:</strong> {{ scan.headers_analyzed|join(', ') }}</p>
+    </div>
+
+    <div class="findings">
+        <h2>⚠️ Detailed Findings</h2>
+        {% if scan.findings %}
+            {% for finding in scan.findings %}
+            <div class="finding severity-{{ finding.severity }}">
+                <h3>{{ finding.check }}</h3>
+                <p><strong>Severity:</strong> {{ finding.severity.upper() }}</p>
+                <div class="details">
+                    {% if finding.details is mapping %}
+                        {% for key, value in finding.details.items() %}
+                            {% if value is iterable and value is not string %}
+                                <p><strong>{{ key|capitalize }}:</strong></p>
+                                <ul>
+                                {% for item in value %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p><strong>{{ key|capitalize }}:</strong> {{ value }}</p>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p>{{ finding.details }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>✅ No issues found!</p>
+        {% endif %}
+    </div>
+
+    <div class="actions">
+        <a href="/history" class="btn">← Back to History</a>
+        <a href="/export/json/{{ scan.filename }}" class="btn btn-secondary">📄 Export JSON</a>
+        <form action="/scan/{{ scan.id }}/delete" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this scan?')">
+                🗑️ Delete
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
