@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Results - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container results-container">
+    <h1>📦 Batch Analysis Results</h1>
+    <p>{{ results|length }} files analyzed</p>
+
+    <table class="scan-table">
+        <thead>
+            <tr>
+                <th>Filename</th>
+                <th>Status</th>
+                <th>Risk</th>
+                <th>Score</th>
+                <th>Findings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.filename }}</td>
+                <td>
+                    {% if result.success %}
+                        ✅
+                    {% else %}
+                        ❌
+                    {% endif %}
+                </td>
+                <td>
+                    {% if result.success %}
+                        <span class="risk-badge-small risk-{{ result.analysis.summary.overall_risk }}">
+                            {{ result.analysis.summary.overall_risk.upper() }}
+                        </span>
+                    {% else %}
+                        Error
+                    {% endif %}
+                </td>
+                <td>
+                    {% if result.success %}
+                        {{ result.analysis.summary.risk_score }}/10
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if result.success %}
+                        {{ result.analysis.summary.total_findings }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="actions">
+        <a href="/batch" class="btn">📦 Analyze More</a>
+        <a href="/history" class="btn btn-secondary">📊 View History</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Upload - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container batch-container">
+    <h1>📦 Batch Upload</h1>
+    <p>Upload multiple .eml files at once</p>
+
+    <form action="/batch/analyze" method="post" enctype="multipart/form-data" id="batch-form">
+        <div class="drop-zone" id="batch-drop-zone">
+            <p>📂 Drag & drop multiple .eml files here</p>
+            <p>or</p>
+            <label for="file-input" class="btn">Browse Files</label>
+            <input type="file" id="file-input" name="files" accept=".eml" multiple hidden>
+        </div>
+        <div id="file-list"></div>
+        <button type="submit" class="btn btn-primary" id="batch-analyze-btn">🔍 Analyze All</button>
+    </form>
+
+    <div id="batch-loading" style="display:none;">
+        <p>⏳ Analyzing {{ file_count }} files... This may take a moment.</p>
+        <div class="progress-track">
+            <div id="batch-progress-bar" style="width: 0%; height: 100%; background: #4a90d9; transition: width 0.5s;"></div>
+        </div>
+        <p id="batch-progress-text">0%</p>
+    </div>
+
+    <div class="features">
+        <h3>Batch Processing Features:</h3>
+        <ul>
+            <li>✅ Upload up to 50 .eml files at once</li>
+            <li>✅ Each file analyzed individually</li>
+            <li>✅ All results saved to database</li>
+            <li>✅ View summary of all results</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('batch-drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const form = document.getElementById('batch-form');
+    const loading = document.getElementById('batch-loading');
+    const progressBar = document.getElementById('batch-progress-bar');
+    const progressText = document.getElementById('batch-progress-text');
+
+    if (dropZone) {
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            updateFileList();
+        });
+
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
+
+    fileInput.addEventListener('change', updateFileList);
+
+    function updateFileList() {
+        fileList.innerHTML = '';
+        if (fileInput.files.length === 0) {
+            fileList.innerHTML = '<p>No files selected</p>';
+            return;
+        }
+        const ul = document.createElement('ul');
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const li = document.createElement('li');
+            li.textContent = `📎 ${fileInput.files[i].name}`;
+            ul.appendChild(li);
+        }
+        fileList.appendChild(ul);
+    }
+
+    form.addEventListener('submit', function(e) {
+        if (fileInput.files.length === 0) {
+            e.preventDefault();
+            alert('Please select at least one .eml file.');
+            return;
+        }
+        
+        loading.style.display = 'block';
+        const totalFiles = fileInput.files.length;
+        document.getElementById('batch-analyze-btn').disabled = true;
+        document.getElementById('batch-analyze-btn').textContent = '⏳ Analyzing...';
+        
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            if (progress > 90) {
+                clearInterval(interval);
+                progress = 90;
+            }
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${progress}%`;
+        }, 300);
+    });
+});
+</script>
+{% endblock %}
