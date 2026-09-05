@@ -10,9 +10,14 @@ from email_analyzer import (
     analyze_headers,
     generate_report
 )
-
+from database import (
+    init_database, save_scan_result, get_all_scans,
+    get_scan_by_id, get_dashboard_stats, delete_scan, clear_all_scans
+)
 
 app = Flask(__name__)
+os.makedirs('data', exist_ok=True)
+init_database()
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -28,7 +33,6 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
 
 @app.route('/export/json/<filename>')
-
 def export_json(filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(filepath):
@@ -47,7 +51,6 @@ def export_json(filename):
     return jsonify(data), 200, {'Content-Disposition': f'attachment; filename={filename}.json'}
 
 @app.route('/export/pdf/<filename>')
-
 def export_pdf(filename):
     if not REPORTLAB_AVAILABLE:
         return "PDF export requires reportlab. Install with: pip install reportlab", 501
@@ -108,12 +111,10 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 @app.route('/')
-
 def upload_page():
     return render_template('upload.html')
 
 @app.route('/analyze', methods=['POST'])
-
 def analyze():
     try:
         if 'file' not in request.files:
@@ -150,7 +151,6 @@ def analyze():
         return f"Error during analysis: {str(e)}", 500
 
 @app.route('/api/analyze', methods=['GET'])
-
 def api_info():
     return jsonify({
         'name': 'Email Header Analyzer API',
@@ -175,7 +175,6 @@ def api_info():
     })
 
 @app.route('/api/analyze', methods=['POST'])
-
 def api_analyze():
     try:
         if 'file' not in request.files:
@@ -208,6 +207,85 @@ def api_analyze():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/history')
+def view_history():
+    limit = request.args.get('limit', 50, type=int)
+    scans = get_all_scans(limit)
+    stats = get_dashboard_stats()
+    return render_template('history.html', scans=scans, stats=stats)
+
+@app.route('/dashboard')
+def view_dashboard():
+    stats = get_dashboard_stats()
+    return render_template('dashboard.html', stats=stats)
+
+@app.route('/scan/<int:scan_id>')
+def view_scan(scan_id):
+    scan = get_scan_by_id(scan_id)
+    if not scan:
+        return "Scan not found", 404
+    
+    scan['findings'] = json.loads(scan['findings']) if scan['findings'] else []
+    scan['headers_analyzed'] = json.loads(scan['headers_analyzed']) if scan['headers_analyzed'] else []
+    return render_template('scan_detail.html', scan=scan)
+
+@app.route('/scan/<int:scan_id>/delete', methods=['POST'])
+def delete_scan_route(scan_id):
+    deleted = delete_scan(scan_id)
+    if not deleted:
+        return "Scan not found", 404
+    return redirect(url_for('view_history'))
+
+@app.route('/clear-all', methods=['POST'])
+def clear_all_scans_route():
+    count = clear_all_scans()
+    return redirect(url_for('view_history'))
+
+@app.route('/batch')
+def batch_upload_page():
+    return render_template('batch.html')
+
+@app.route('/batch/analyze', methods=['POST'])
+def batch_analyze():
+    if 'files' not in request.files:
+        return "No files uploaded", 400
+    files = request.files.getlist('files')
+    if not files or all(f.filename == '' for f in files):
+        return "No files selected", 400
+    results = []
+    for file in files:
+        if file.filename == '':
+            continue
+        if not allowed_file(file.filename):
+            continue
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        content = read_eml_file(filepath)
+        if content:
+            header, body, h_lines, b_lines = split_headers_body(content)
+            headers = parse_headers(header)
+            analysis = analyze_headers(headers, body)
+            save_scan_result(
+                filename=filename,
+                file_size=os.path.getsize(filepath),
+                analysis=analysis,
+                headers=headers,
+                body_preview=body[:300]
+            )
+            results.append({
+                'filename': filename,
+                'analysis': analysis,
+                'success': True
+            })
+        else:
+            results.append({
+                'filename': filename,
+                'success': False,
+                'error': 'Error reading file'
+            })
+    return render_template('batch_results.html', results=results)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
