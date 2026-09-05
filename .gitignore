@@ -93,3 +93,4 @@ npm-debug.log*
 *.dockerignore
 Dockerfile*
 .docker/test_quick.py
+uploads/
