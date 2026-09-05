@@ -403,3 +403,221 @@ footer {
         padding: 1.5rem;
     }
 }
+
+.history-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--card-shadow);
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.stat-card {
+    background: var(--finding-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.table-actions {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.scan-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.scan-table th {
+    background: var(--nav-bg);
+    color: white;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.scan-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.scan-table tr:hover {
+    background: var(--finding-bg);
+}
+
+.risk-badge-small {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+}
+
+.btn-danger {
+    background: #dc3545;
+}
+
+.btn-danger:hover {
+    background: #c82333;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-light);
+}
+
+.dashboard-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--card-shadow);
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.risk-chart {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--finding-bg);
+    border-radius: 8px;
+}
+
+.chart-bars {
+    margin-top: 1rem;
+}
+
+.bar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+}
+
+.bar-container span:first-child {
+    width: 60px;
+    font-weight: bold;
+}
+
+.bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--progress-bg);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    transition: width 0.5s ease;
+}
+
+.bar-container span:last-child {
+    width: 30px;
+    text-align: right;
+}
+
+.recent-scans {
+    margin: 2rem 0;
+}
+
+.batch-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--card-shadow);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#file-list {
+    margin: 1rem 0;
+}
+
+#file-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+#file-list li {
+    padding: 0.3rem 0;
+    color: var(--text-light);
+}
+
+.scan-detail-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--card-shadow);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.scan-meta {
+    background: var(--finding-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.scan-meta p {
+    margin: 0.3rem 0;
+}
+
+@media (max-width: 768px) {
+    .stats-summary,
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .scan-table {
+        font-size: 0.8rem;
+    }
+    
+    .scan-table th,
+    .scan-table td {
+        padding: 0.4rem;
+    }
+    
+    .bar-container {
+        flex-wrap: wrap;
+    }
+    
+    .bar-container span:first-child {
+        width: 100%;
+    }
+}
