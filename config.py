@@ -45,16 +45,16 @@ SUSPICIOUS_TLDS = [
     '.webcam', '.science', '.party', '.racing', '.accountant'
 ]
 
-FREE_EMAIL_PROVIDERS = [
-    'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
-    'protonmail.com', 'mail.com', 'yandex.com', 'aol.com',
-    'zoho.com', 'gmx.com', 'tutanota.com', 'icloud.com'
-]
-
 SUSPICIOUS_DOMAINS = [
     'secure', 'verify', 'update', 'confirm', 'validate',
     'authenticate', 'signin', 'login', 'account', 'security',
     'alert', 'notice', 'warning', 'important', 'urgent'
+]
+
+FREE_EMAIL_PROVIDERS = [
+    'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
+    'protonmail.com', 'mail.com', 'yandex.com', 'aol.com',
+    'zoho.com', 'gmx.com', 'tutanota.com', 'icloud.com'
 ]
 
 DANGEROUS_EXTENSIONS = [
@@ -63,9 +63,20 @@ DANGEROUS_EXTENSIONS = [
     '.ps1', '.py', '.rb', '.pl', '.sh', '.cpl', '.ad'
 ]
 
-DAYS_THRESHOLD_OLD = 30  
-DAYS_THRESHOLD_VERY_OLD = 90  
-MAX_HOPS_NORMAL = 5  
-MAX_HOPS_SUSPICIOUS = 10  
-MAX_URLS_TO_DISPLAY = 10  
-MAX_SUSPICIOUS_URLS = 5  
+DAYS_THRESHOLD_OLD = 30
+DAYS_THRESHOLD_VERY_OLD = 90
+
+MAX_HOPS_NORMAL = 5
+MAX_HOPS_SUSPICIOUS = 10
+
+MAX_URLS_TO_DISPLAY = 10
+MAX_SUSPICIOUS_URLS = 5
+
+class Config:
+    SECRET_KEY = 'your-secret-key-here-change-in-production'
+    UPLOAD_FOLDER = 'uploads'
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    ALLOWED_EXTENSIONS = {'eml'}
+    DEBUG = True
+    HOST = '0.0.0.0'
+    PORT = 5000
