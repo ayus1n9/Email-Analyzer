@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Email - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container upload-container">
+    <h1>📧 Upload Email File</h1>
+    <p>Upload a .eml file to analyze for phishing indicators</p>
+
+    <form action="/analyze" method="post" enctype="multipart/form-data" id="upload-form">
+        <div class="drop-zone" id="drop-zone">
+            <p>📂 Drag & drop your .eml file here</p>
+            <p>or</p>
+            <label for="file-input" class="btn">Browse Files</label>
+            <input type="file" id="file-input" name="file" accept=".eml" hidden required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="analyze-btn">🔍 Analyze Email</button>
+    </form>
+
+    <div id="progress-container" style="display:none; margin: 1rem 0;">
+        <div style="background: #eee; border-radius: 4px; overflow: hidden; height: 20px;">
+            <div id="progress-bar" style="width: 0%; height: 100%; background: #4a90d9; transition: width 0.5s;"></div>
+        </div>
+        <p id="progress-text" style="margin-top: 0.5rem;">Analyzing... 0%</p>
+    </div>
+
+    <div id="loading" style="display:none; margin-top:1rem;">
+        <p>⏳ Analyzing email... This may take a moment.</p>
+    </div>
+
+    <div class="features">
+        <h3>What we analyze:</h3>
+        <ul>
+            <li>✅ From vs Return-Path mismatch</li>
+            <li>✅ SPF/DKIM authentication</li>
+            <li>✅ Received chain analysis</li>
+            <li>✅ URL analysis</li>
+            <li>✅ Subject line analysis</li>
+            <li>✅ Reply-To spoofing</li>
+            <li>✅ Display name impersonation</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

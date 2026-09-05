@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Report - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container report-container">
+    <h1>📊 Analysis Report</h1>
+    <p><strong>File:</strong> {{ filename }}</p>
+
+    <div class="risk-summary">
+        <div class="risk-badge risk-{{ analysis.summary.overall_risk }}">
+            {{ analysis.summary.overall_risk.upper() }} RISK
+        </div>
+        <p><strong>Risk Score:</strong> {{ analysis.summary.risk_score }}/10</p>
+        <p><strong>Total Findings:</strong> {{ analysis.summary.total_findings }}</p>
+        <p><strong>Max Severity:</strong> {{ analysis.summary.max_severity.upper() }}</p>
+    </div>
+
+    <div class="findings">
+        <h2>⚠️ Security Findings</h2>
+        {% if analysis.findings %}
+            {% for finding in analysis.findings %}
+            <div class="finding severity-{{ finding.severity }}">
+                <h3>{{ finding.check }}</h3>
+                <p><strong>Severity:</strong> {{ finding.severity.upper() }}</p>
+                <div class="details">
+                    {% if finding.details is mapping %}
+                        {% for key, value in finding.details.items() %}
+                            {% if value is iterable and value is not string %}
+                                <p><strong>{{ key|capitalize }}:</strong></p>
+                                <ul>
+                                {% for item in value %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                <p><strong>{{ key|capitalize }}:</strong> {{ value }}</p>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p>{{ finding.details }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>✅ No security issues found!</p>
+        {% endif %}
+    </div>
+
+    <div class="actions">
+        <a href="/" class="btn">Analyze Another</a>
+        <a href="/export/json/{{ filename }}" class="btn btn-secondary">📄 Export JSON</a>
+        <a href="/export/pdf/{{ filename }}" class="btn btn-secondary">📄 Export PDF</a>
+        <button onclick="window.print()" class="btn btn-secondary">🖨️ Print</button>
+    </div>
+</div>
+{% endblock %}
