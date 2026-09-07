@@ -3,6 +3,9 @@
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-13%20passing-brightgreen.svg)](https://github.com/ayus1n9/email-header-analyzer)
+[![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
+[![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
+[![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
 
 > **A Python tool to parse and analyze email headers (.eml files) for phishing detection, spoofing attempts, and security threats.**
 
