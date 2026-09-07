@@ -3,5 +3,5 @@ Werkzeug==3.1.6
 requests==2.33.0
 reportlab==4.0.4
 msgpack>=1.2.1
-setuptools>=78.1.1
+setuptools>=83.0.0
 wheel>=0.46.2

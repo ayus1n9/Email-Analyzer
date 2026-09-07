@@ -13,7 +13,11 @@ WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --upgrade pip setuptools wheel msgpack
+RUN pip install --no-cache-dir --upgrade \
+    "pip>=26.2.0" \
+    "setuptools>=83.0.0" \
+    "wheel>=0.46.2" \
+    "msgpack>=1.2.1"
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ============================================
