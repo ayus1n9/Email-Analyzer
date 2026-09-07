@@ -1,7 +1,7 @@
 # ============================================
 # STAGE 1: Builder
 # ============================================
-FROM python:3.10-slim AS builder
+FROM python:3.12-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # ============================================
 # STAGE 2: Final Image
 # ============================================
-FROM python:3.10-slim
+FROM python:3.12-slim
 
 # Security: Create non-root user
 RUN adduser --disabled-password --gecos '' appuser
@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Security: Copy only what we need from builder
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application code
