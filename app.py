@@ -290,7 +290,8 @@ def batch_analyze():
     return render_template('batch_results.html', results=results)
 
 if __name__ == '__main__':
-    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    env = os.environ.get('FLASK_ENV', 'development')
+    debug_mode = env == 'development'
     host = os.environ.get('FLASK_HOST', '127.0.0.1')
     port = int(os.environ.get('FLASK_PORT', 5000))
     app.run(debug=debug_mode, host=host, port=port)

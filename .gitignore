@@ -132,3 +132,29 @@ semgrep.sarif
 # VS Code (if not already)
 .vscode/
 .idea/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Security & DevSecOps
+*.key
+*.pem
+*.crt
+*.secret
+security-reports/
+bandit-report.json
+safety-report.json
+trivy-results.sarif
+semgrep.sarif
+*.sarif
+
+# Docker
+.docker/
+
+# VS Code (if not already)
+.vscode/
+.idea/
+*.code-workspace
