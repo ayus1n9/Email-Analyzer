@@ -20,7 +20,7 @@ app = Flask(__name__)
 os.makedirs('data', exist_ok=True)
 init_database()
 app.register_blueprint(api_bp)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['ALLOWED_EXTENSIONS'] = {'eml'}
@@ -290,4 +290,7 @@ def batch_analyze():
     return render_template('batch_results.html', results=results)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    host = os.environ.get('FLASK_HOST', '127.0.0.1')
+    port = int(os.environ.get('FLASK_PORT', 5000))
+    app.run(debug=debug_mode, host=host, port=port)

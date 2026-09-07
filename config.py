@@ -1,3 +1,5 @@
+import os
+
 URGENCY_KEYWORDS = [
     'urgent', 'immediate', 'action required', 'asap',
     'important', 'critical', 'attention needed', 'time sensitive',
@@ -78,10 +80,10 @@ DEFAULT_HISTORY_LIMIT = 50
 DAYS_FOR_TRENDING = 7
 
 class Config:
-    SECRET_KEY = 'your-secret-key-here-change-in-production'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     UPLOAD_FOLDER = 'uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     ALLOWED_EXTENSIONS = {'eml'}
     DEBUG = True
-    HOST = '0.0.0.0'
+    HOST = os.environ.get('FLASK_HOST', '127.0.0.1')
     PORT = 5000

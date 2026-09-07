@@ -10,7 +10,8 @@ def check_virustotal(url: str, api_key: str) -> Dict:
         response = requests.post(
             'https://www.virustotal.com/api/v3/urls',
             data={'url': url},
-            headers={'x-apikey': api_key}
+            headers={'x-apikey': api_key},
+            timeout=30
         )
         if response.status_code == 200:
             data = response.json()
@@ -32,7 +33,8 @@ def check_ip_reputation(ip: str, api_key: str) -> Dict:
         response = requests.get(
             f'https://api.abuseipdb.com/api/v2/check',
             params={'ipAddress': ip, 'maxAgeInDays': 90},
-            headers={'Key': api_key, 'Accept': 'application/json'}
+            headers={'Key': api_key, 'Accept': 'application/json'},
+            timeout=30
         )
         if response.status_code == 200:
             data = response.json()
@@ -91,7 +93,7 @@ def send_slack_alert(webhook_url: str, message: Dict) -> bool:
                 ]
             }]
         }
-        response = requests.post(webhook_url, json=payload)
+        response = requests.post(webhook_url, json=payload, timeout=30)
         return response.status_code == 200
     
     except Exception:
