@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template, jsonify, redirect, url_for, make_response
 from werkzeug.utils import secure_filename
+from api import api_bp
 import os
 import json
 from datetime import datetime
@@ -18,6 +19,7 @@ from database import (
 app = Flask(__name__)
 os.makedirs('data', exist_ok=True)
 init_database()
+app.register_blueprint(api_bp)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
