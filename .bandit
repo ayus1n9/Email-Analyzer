@@ -1,0 +1,16 @@
+# .bandit - Bandit configuration
+# https://bandit.readthedocs.io/en/latest/config.html
+
+skips: ['B101', 'B601']  # Skip assert and exec usage warnings
+exclude_dirs: ['tests', 'venv', '.venv', '__pycache__']
+
+# Severity levels to report
+# LOW, MEDIUM, HIGH
+severity: 'HIGH'
+confidence: 'HIGH'
+
+# Report format
+format: 'json'
+
+# Output file
+output: 'bandit-report.json'
