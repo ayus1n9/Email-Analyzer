@@ -27,6 +27,7 @@ If you discover a security vulnerability, please:
 1. **DO NOT** open a public issue
 2. Email: [your-security-email]
 3. Provide detailed steps to reproduce
+4. 
 
 ## 🔒 Security Best Practices
 
@@ -46,3 +47,28 @@ This project follows these security best practices:
 ![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)
 ![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)
 ![Secrets Check](https://img.shields.io/badge/Secrets-Not%20Found-brightgreen)
+
+## 🐳 Container Security
+
+### Docker Security Features
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Non-root user | ✅ Enabled | Runs as `appuser`, not root |
+| No new privileges | ✅ Enabled | `security_opt: no-new-privileges` |
+| Dropped capabilities | ✅ Enabled | All capabilities dropped except `NET_BIND_SERVICE` |
+| Read-only filesystem | ✅ Enabled | Only `/tmp` is writable |
+| Health check | ✅ Enabled | HTTP health check endpoint |
+| Trivy scanning | ✅ Enabled | Automated vulnerability scanning |
+
+### Scanning Docker Images
+
+```bash
+# Build the image
+docker build -t email-analyzer:latest .
+
+# Scan with Trivy
+docker run --rm aquasec/trivy image email-analyzer:latest
+
+# Scan with Docker Bench
+docker run --rm docker/docker-bench-security
