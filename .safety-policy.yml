@@ -1,0 +1,17 @@
+# .safety-policy.yml
+# Safety policy for dependency scanning
+
+# Ignore specific vulnerabilities (if you know they're safe)
+# Format: { "id": "vulnerability-id", "reason": "why it's safe" }
+ignore:
+  # Example:
+  # - { "id": "12345", "reason": "This is a false positive" }
+
+# Severity thresholds to fail on
+severity: "high"
+
+# Security advisories
+security:
+  advisories:
+    - type: "CVE"
+    - type: "GHSA"
