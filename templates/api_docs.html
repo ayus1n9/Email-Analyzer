@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}API Documentation - Email Header Analyzer{% endblock %}
+
+{% block content %}
+<div class="container api-docs-container">
+    <h1>REST API Documentation</h1>
+    <p>Version 1.0.0</p>
+
+    <div class="api-section">
+        <h2>Authentication</h2>
+        <p>All API endpoints require an API key sent in the <code>X-API-Key</code> header.</p>
+        
+        <h3>Generate API Key</h3>
+        <pre><code>POST /api/v1/keys
+Content-Type: application/json
+
+{
+    "user_id": "your-user-id",
+    "name": "My API Key"
+}</code></pre>
+    </div>
+
+    <div class="api-section">
+        <h2>Endpoints</h2>
+        
+        <div class="endpoint">
+            <h3>POST /api/v1/analyze</h3>
+            <p>Analyze an .eml file</p>
+            <pre><code>POST /api/v1/analyze
+Content-Type: multipart/form-data
+X-API-Key: your-api-key
+
+File: email.eml</code></pre>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/v1/history</h3>
+            <p>Get analysis history</p>
+            <pre><code>GET /api/v1/history?limit=50
+X-API-Key: your-api-key</code></pre>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/v1/scan/{id}</h3>
+            <p>Get a specific scan</p>
+            <pre><code>GET /api/v1/scan/1
+X-API-Key: your-api-key</code></pre>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/v1/dashboard</h3>
+            <p>Get dashboard statistics</p>
+            <pre><code>GET /api/v1/dashboard
+X-API-Key: your-api-key</code></pre>
+        </div>
+
+        <div class="endpoint">
+            <h3>DELETE /api/v1/scan/{id}</h3>
+            <p>Delete a scan</p>
+            <pre><code>DELETE /api/v1/scan/1
+X-API-Key: your-api-key</code></pre>
+        </div>
+
+        <div class="endpoint">
+            <h3>GET /api/v1/health</h3>
+            <p>Health check (no authentication required)</p>
+            <pre><code>GET /api/v1/health</code></pre>
+        </div>
+    </div>
+
+    <div class="api-section">
+        <h2>Testing with curl</h2>
+        <pre><code># Generate API key
+curl -X POST http://localhost:5000/api/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"user_id": "test", "name": "Test Key"}'
+
+curl -X POST http://localhost:5000/api/v1/analyze \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@email.eml"
+
+curl -X GET http://localhost:5000/api/v1/history \
+  -H "X-API-Key: your-api-key"</code></pre>
+    </div>
+</div>
+{% endblock %}
