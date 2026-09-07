@@ -25,32 +25,30 @@ jobs:
         run: pip install bandit
       
       - name: Run Bandit SAST
+        id: bandit
         run: |
           bandit -r . -f json -o bandit-report.json || true
           bandit -r . -f html -o bandit-report.html || true
+          echo "status=success" >> $GITHUB_OUTPUT
+      
+      - name: Check for HIGH severity issues
+        run: |
+          if grep -q '"issue_severity": "HIGH"' bandit-report.json; then
+            echo "🔴 Security scan found HIGH severity issues!"
+            cat bandit-report.json | jq '.results[] | select(.issue_severity=="HIGH")'
+            exit 1
+          else
+            echo "✅ No HIGH severity issues found!"
+          fi
       
       - name: Upload SAST Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: sast-report
           path: |
             bandit-report.json
             bandit-report.html
-      
-      - name: Set Security Status
-        id: security-status
-        run: |
-          if grep -q '"issue_severity": "HIGH"' bandit-report.json; then
-            echo "status=failing" >> $GITHUB_OUTPUT
-            echo "🔴 Security scan found HIGH severity issues!"
-          else
-            echo "status=passing" >> $GITHUB_OUTPUT
-            echo "✅ Security scan passed!"
-          fi
-      
-      - name: Fail if HIGH severity issues found
-        if: steps.security-status.outputs.status == 'failing'
-        run: exit 1
 
   sca:
     name: 📦 SCA (Safety)
@@ -74,22 +72,24 @@ jobs:
           safety check -r requirements.txt --json > safety-report.json || true
           safety check -r requirements.txt --full-report > safety-report.txt || true
       
+      - name: Check for vulnerabilities
+        run: |
+          if grep -q '"vulnerabilities"' safety-report.json; then
+            echo "🔴 Vulnerabilities found in dependencies!"
+            cat safety-report.json | jq '.vulnerabilities'
+            exit 1
+          else
+            echo "✅ No vulnerabilities found in dependencies!"
+          fi
+      
       - name: Upload SCA Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: sca-report
           path: |
             safety-report.json
             safety-report.txt
-      
-      - name: Check for vulnerabilities
-        run: |
-          if grep -q '"vulnerabilities"' safety-report.json; then
-            echo "🔴 Vulnerabilities found in dependencies!"
-            exit 1
-          else
-            echo "✅ No vulnerabilities found in dependencies!"
-          fi
 
   secrets:
     name: 🔑 Secrets Detection (TruffleHog)
@@ -104,14 +104,10 @@ jobs:
         run: pip install trufflehog
       
       - name: Scan for secrets
+        id: trufflehog
         run: |
           trufflehog filesystem . --only-verified --json > secrets-report.json || true
-      
-      - name: Upload Secrets Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: secrets-report
-          path: secrets-report.json
+          echo "status=success" >> $GITHUB_OUTPUT
       
       - name: Check for secrets
         run: |
@@ -122,12 +118,19 @@ jobs:
           else
             echo "✅ No secrets found!"
           fi
+      
+      - name: Upload Secrets Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: secrets-report
+          path: secrets-report.json
 
   security-badge:
     name: 🏷️ Security Badge
-    needs: [sast, sca, secrets]
-    if: always()
     runs-on: ubuntu-latest
+    needs: [sast, sca, secrets]
+    if: success() || failure()
     steps:
       - name: Determine overall status
         id: status
@@ -140,12 +143,29 @@ jobs:
             echo "overall=passing" >> $GITHUB_OUTPUT
           fi
       
-      - name: Create Security Badge
-        uses: schneegans/dynamic-badges-action@v1
+      - name: Create Security Badge using Shields.io
+        run: |
+          STATUS="${{ steps.status.outputs.overall }}"
+          COLOR="${{ steps.status.outputs.overall == 'passing' && 'brightgreen' || 'red' }}"
+          echo "Security Scan: $STATUS"
+          
+          # Create a simple badge URL
+          BADGE_URL="https://img.shields.io/badge/Security%20Scan-$STATUS-$COLOR"
+          echo "BADGE_URL=$BADGE_URL" >> $GITHUB_ENV
+      
+      - name: Upload Security Badge Status
+        run: |
+          echo "Security Scan: ${{ steps.status.outputs.overall }}" > security-status.txt
+          echo "Badge URL: $BADGE_URL" >> security-status.txt
+      
+      - name: Upload Security Status
+        uses: actions/upload-artifact@v4
         with:
-          auth: ${{ secrets.GIST_SECRET }}
-          gistID: ${{ secrets.BADGE_GIST_ID }}
-          filename: security-status.json
-          label: Security Scan
-          message: ${{ steps.status.outputs.overall == 'passing' && '✅ Passing' || '❌ Failing' }}
-          color: ${{ steps.status.outputs.overall == 'passing' && 'brightgreen' || 'red' }}
+          name: security-status
+          path: security-status.txt
+      
+      - name: Update README Badge (Optional)
+        run: |
+          STATUS="${{ steps.status.outputs.overall }}"
+          COLOR="${{ steps.status.outputs.overall == 'passing' && 'brightgreen' || 'red' }}"
+          echo "![]()" 
