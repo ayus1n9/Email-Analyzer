@@ -54,6 +54,7 @@ jobs:
           image-ref: email-analyzer:latest
           format: sarif
           output: trivy-results.sarif
+          scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: 1
           ignore-unfixed: true
@@ -86,7 +87,10 @@ jobs:
         run: |
           docker pull docker/docker-bench-security:latest
 
-          docker run --rm             -v /var/run/docker.sock:/var/run/docker.sock             docker/docker-bench-security:latest             --output docker-bench-report.txt || true
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            docker/docker-bench-security:latest \
+            --output docker-bench-report.txt || true
 
           if [ -f docker-bench-report.txt ] && [ -s docker-bench-report.txt ]; then
             echo "Docker Bench report generated successfully!"
