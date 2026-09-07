@@ -1,0 +1,151 @@
+name: 🔒 Security Scans
+
+on:
+  push:
+    branches: [ master, devsecops ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  sast:
+    name: 🛡️ SAST (Bandit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install Bandit
+        run: pip install bandit
+      
+      - name: Run Bandit SAST
+        run: |
+          bandit -r . -f json -o bandit-report.json || true
+          bandit -r . -f html -o bandit-report.html || true
+      
+      - name: Upload SAST Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-report
+          path: |
+            bandit-report.json
+            bandit-report.html
+      
+      - name: Set Security Status
+        id: security-status
+        run: |
+          if grep -q '"issue_severity": "HIGH"' bandit-report.json; then
+            echo "status=failing" >> $GITHUB_OUTPUT
+            echo "🔴 Security scan found HIGH severity issues!"
+          else
+            echo "status=passing" >> $GITHUB_OUTPUT
+            echo "✅ Security scan passed!"
+          fi
+      
+      - name: Fail if HIGH severity issues found
+        if: steps.security-status.outputs.status == 'failing'
+        run: exit 1
+
+  sca:
+    name: 📦 SCA (Safety)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install safety
+          pip freeze > requirements.txt
+      
+      - name: Run Safety SCA
+        run: |
+          safety check -r requirements.txt --json > safety-report.json || true
+          safety check -r requirements.txt --full-report > safety-report.txt || true
+      
+      - name: Upload SCA Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-report
+          path: |
+            safety-report.json
+            safety-report.txt
+      
+      - name: Check for vulnerabilities
+        run: |
+          if grep -q '"vulnerabilities"' safety-report.json; then
+            echo "🔴 Vulnerabilities found in dependencies!"
+            exit 1
+          else
+            echo "✅ No vulnerabilities found in dependencies!"
+          fi
+
+  secrets:
+    name: 🔑 Secrets Detection (TruffleHog)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install TruffleHog
+        run: pip install trufflehog
+      
+      - name: Scan for secrets
+        run: |
+          trufflehog filesystem . --only-verified --json > secrets-report.json || true
+      
+      - name: Upload Secrets Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: secrets-report
+          path: secrets-report.json
+      
+      - name: Check for secrets
+        run: |
+          if [ -s secrets-report.json ]; then
+            echo "🔴 Potential secrets found in the codebase!"
+            cat secrets-report.json
+            exit 1
+          else
+            echo "✅ No secrets found!"
+          fi
+
+  security-badge:
+    name: 🏷️ Security Badge
+    needs: [sast, sca, secrets]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine overall status
+        id: status
+        run: |
+          if [[ "${{ needs.sast.result }}" == "failure" || \
+                "${{ needs.sca.result }}" == "failure" || \
+                "${{ needs.secrets.result }}" == "failure" ]]; then
+            echo "overall=failing" >> $GITHUB_OUTPUT
+          else
+            echo "overall=passing" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Security Badge
+        uses: schneegans/dynamic-badges-action@v1
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: ${{ secrets.BADGE_GIST_ID }}
+          filename: security-status.json
+          label: Security Scan
+          message: ${{ steps.status.outputs.overall == 'passing' && '✅ Passing' || '❌ Failing' }}
+          color: ${{ steps.status.outputs.overall == 'passing' && 'brightgreen' || 'red' }}
