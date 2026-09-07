@@ -11,31 +11,33 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# Install security-fixed packaging tools first.
-RUN python -m pip install --no-cache-dir --upgrade \
-    "pip>=26.2.0" \
-    "setuptools>=83.0.0" \
-    "wheel>=0.46.2" \
-    "msgpack>=1.2.1"
-
-RUN python -m pip install --no-cache-dir -r requirements.txt
+# Install application dependencies and immediately enforce
+# security-fixed versions in the SAME Docker layer.
+RUN python -m pip install --no-cache-dir -r requirements.txt && \
+    python -m pip install --no-cache-dir --upgrade \
+        "pip>=26.2.0" \
+        "setuptools>=83.0.0" \
+        "wheel>=0.46.2" \
+        "msgpack>=1.2.1"
 
 # ============================================
-# STAGE 2: Final Image
+# STAGE 2: Runtime
 # ============================================
-FROM python:3.12-slim
+FROM builder AS runtime
+
+# Remove build-only compiler.
+RUN apt-get purge -y gcc && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install runtime dependency.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN adduser --disabled-password --gecos '' appuser
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
-
-# Copy installed Python packages and executables from builder.
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY --chown=appuser:appuser . .
 
