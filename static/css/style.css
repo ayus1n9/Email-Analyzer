@@ -621,3 +621,63 @@ footer {
         width: 100%;
     }
 }
+
+.api-docs-container {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px var(--card-shadow);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.api-section {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--finding-bg);
+    border-radius: 8px;
+}
+
+.api-section h2 {
+    margin-bottom: 1rem;
+}
+
+.api-section h3 {
+    margin: 1rem 0 0.5rem 0;
+}
+
+.endpoint {
+    padding: 1rem;
+    margin: 1rem 0;
+    background: var(--card-bg);
+    border-left: 4px solid var(--btn-primary);
+    border-radius: 4px;
+}
+
+.endpoint h3 {
+    margin-top: 0;
+    color: var(--btn-primary);
+}
+
+code {
+    background: var(--nav-bg);
+    color: #e0e0e0;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+pre {
+    background: var(--nav-bg);
+    color: #e0e0e0;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+}
+
+pre code {
+    background: transparent;
+    padding: 0;
+}
