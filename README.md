@@ -33,6 +33,26 @@ Email Header Analyzer parses `.eml` files and performs comprehensive security an
 
 ---
 
+## 🔌 REST API
+
+Email Header Analyzer provides a complete REST API for integration with other tools.
+
+### API Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| POST | `/api/v1/keys` | Generate API key | ❌ No |
+| POST | `/api/v1/analyze` | Analyze email | ✅ Yes |
+| GET | `/api/v1/history` | Get scan history | ✅ Yes |
+| GET | `/api/v1/scan/{id}` | Get specific scan | ✅ Yes |
+| DELETE | `/api/v1/scan/{id}` | Delete scan | ✅ Yes |
+| GET | `/api/v1/dashboard` | Get statistics | ✅ Yes |
+| GET | `/api/v1/health` | Health check | ❌ No |
+
+### Interactive API Documentation
+
+Access the API documentation at: http://localhost:5000/api/v1/docs
+
 ## 📋 Requirements
 
 - Python 3.6 or higher

@@ -94,3 +94,41 @@ npm-debug.log*
 Dockerfile*
 .docker/test_quick.py
 uploads/
+
+# Database (Day 3)
+data/
+*.db
+*.sqlite
+
+# Uploaded files (Day 2)
+uploads/
+*.eml
+!sample.eml
+
+# Reports & Outputs (Day 5)
+reports/
+*.pdf
+*.html
+*.csv
+*.json
+!sample.json
+
+# Security Scans (DevSecOps)
+security-reports/
+bandit-report.json
+safety-report.json
+trivy-results.sarif
+semgrep.sarif
+*.sarif
+
+# Environment variables (DevSecOps)
+.env
+.env.*
+*.env
+
+# Docker
+.docker/
+
+# VS Code (if not already)
+.vscode/
+.idea/
