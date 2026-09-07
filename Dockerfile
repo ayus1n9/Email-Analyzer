@@ -13,6 +13,7 @@ WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ============================================
