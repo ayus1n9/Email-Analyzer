@@ -15,38 +15,55 @@ jobs:
   container-scan:
     name: 🐳 Trivy Container Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
+      # Temporarily disable cache so we can prove the image
+      # contains the newly fixed dependency versions.
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           load: true
           tags: email-analyzer:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
+          no-cache: true
+
+      - name: Verify Python package versions
+        run: |
+          echo "=== pip ==="
+          docker run --rm email-analyzer:latest python -m pip --version
+
+          echo "=== setuptools ==="
+          docker run --rm email-analyzer:latest python -m pip show setuptools
+
+          echo "=== msgpack ==="
+          docker run --rm email-analyzer:latest python -m pip show msgpack
+
+          echo "=== image ID ==="
+          docker image inspect email-analyzer:latest --format '{{.Id}}'
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: email-analyzer:latest
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'HIGH,CRITICAL'
-          exit-code: '1'
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: 1
           ignore-unfixed: true
-      
+
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
-      
+          sarif_file: trivy-results.sarif
+
       - name: Upload Trivy report
         uses: actions/upload-artifact@v4
         if: always()
@@ -55,36 +72,30 @@ jobs:
           path: trivy-results.sarif
 
   # ============================================
-  # JOB 2: Docker Bench Security (Fixed)
+  # JOB 2: Docker Bench Security
   # ============================================
   docker-bench:
     name: 🛡️ Docker Bench Security
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Run Docker Bench for Security
         run: |
-          # Pull the image
           docker pull docker/docker-bench-security:latest
-          
-          # Run with correct entrypoint and output to file
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            docker/docker-bench-security:latest \
-            --output docker-bench-report.txt || true
-          
-          # Check if report was generated
+
+          docker run --rm             -v /var/run/docker.sock:/var/run/docker.sock             docker/docker-bench-security:latest             --output docker-bench-report.txt || true
+
           if [ -f docker-bench-report.txt ] && [ -s docker-bench-report.txt ]; then
             echo "Docker Bench report generated successfully!"
-            cat docker-bench-report.txt | head -50
+            head -50 docker-bench-report.txt
           else
             echo "No report generated, creating placeholder"
             echo "Docker Bench Security: No issues found or scan completed" > docker-bench-report.txt
           fi
-      
+
       - name: Upload Docker Bench Report
         uses: actions/upload-artifact@v4
         if: always()
