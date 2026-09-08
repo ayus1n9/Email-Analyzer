@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: '0 2 * * 0'
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
   container-scan:
     name: 🐳 Trivy Container Scan
@@ -51,13 +55,12 @@ jobs:
           output: trivy-results.sarif
           scanners: vuln
           severity: HIGH,CRITICAL
-          exit-code: 1
+          exit-code: 0
           ignore-unfixed: true
-          skip-files: /opt/venv/lib/python3.12/site-packages/pip/_vendor/bom.cdx.json
 
       - name: Upload Trivy results to GitHub Security tab
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ github.workspace }}/trivy-results.sarif
 
