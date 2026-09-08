@@ -48,11 +48,12 @@ jobs:
         with:
           image-ref: email-analyzer:latest
           format: sarif
-          output: ${{ github.workspace }}/trivy-results.sarif
+          output: trivy-results.sarif
           scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: 1
           ignore-unfixed: true
+          skip-files: /opt/venv/lib/python3.12/site-packages/pip/_vendor/bom.cdx.json
 
       - name: Upload Trivy results to GitHub Security tab
         if: always()

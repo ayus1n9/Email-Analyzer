@@ -11,13 +11,19 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-RUN python -m pip install --no-cache-dir --upgrade \
+# Create an isolated environment containing the exact
+# application dependencies.
+RUN python -m venv /opt/venv
+
+RUN /opt/venv/bin/python -m pip install --no-cache-dir \
+    --upgrade \
     "pip>=26.2.0" \
     "setuptools>=83.0.0" \
     "wheel>=0.46.2" \
     "msgpack>=1.2.1"
 
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN /opt/venv/bin/python -m pip install --no-cache-dir \
+    -r requirements.txt
 
 
 # ============================================
@@ -33,8 +39,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the isolated Python environment from the builder.
+COPY --from=builder /opt/venv /opt/venv
+
+# Ensure the application uses the isolated environment.
+ENV PATH="/opt/venv/bin:$PATH"
 
 COPY --chown=appuser:appuser . .
 
