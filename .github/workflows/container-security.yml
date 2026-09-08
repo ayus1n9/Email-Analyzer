@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   container-scan:
-    name: 🐳 Trivy Container Scan
+    name: Trivy Container Scan
     runs-on: ubuntu-latest
 
     steps:
@@ -32,20 +32,29 @@ jobs:
           load: true
           tags: email-analyzer:latest
           no-cache: true
+          pull: true
 
-      - name: Verify Python package versions
+      - name: Verify Docker image
         run: |
-          echo "=== pip ==="
-          docker run --rm email-analyzer:latest python -m pip --version
+          echo "=== IMAGE ID ==="
+          docker image inspect email-analyzer:latest \
+            --format '{{.Id}}'
 
-          echo "=== setuptools ==="
-          docker run --rm email-analyzer:latest python -m pip show setuptools
+          echo "=== PYTHON ==="
+          docker run --rm email-analyzer:latest \
+            python --version
 
-          echo "=== msgpack ==="
-          docker run --rm email-analyzer:latest python -m pip show msgpack
+          echo "=== PIP ==="
+          docker run --rm email-analyzer:latest \
+            python -m pip --version
 
-          echo "=== image ID ==="
-          docker image inspect email-analyzer:latest --format '{{.Id}}'
+          echo "=== SETUPTOOLS ==="
+          docker run --rm email-analyzer:latest \
+            python -m pip show setuptools
+
+          echo "=== MSGPACK ==="
+          docker run --rm email-analyzer:latest \
+            python -m pip show msgpack
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
@@ -72,7 +81,7 @@ jobs:
           path: ${{ github.workspace }}/trivy-results.sarif
 
   docker-bench:
-    name: 🛡️ Docker Bench Security
+    name: Docker Bench Security
     runs-on: ubuntu-latest
 
     steps:
