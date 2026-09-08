@@ -2,13 +2,19 @@ name: Container Security Scan
 
 on:
   push:
-    branches: [ master, devsecops ]
+    branches: [master, devsecops]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
     - cron: '0 2 * * 0'
 
+# Required for uploading SARIF results to GitHub Security
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
+
   # ============================================
   # JOB 1: Trivy Container Scan
   # ============================================
@@ -23,10 +29,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Temporarily disable cache so we can prove the image
-      # contains the newly fixed dependency versions.
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -34,6 +38,9 @@ jobs:
           tags: email-analyzer:latest
           no-cache: true
 
+      # ============================================
+      # Verify that vulnerable packages are fixed
+      # ============================================
       - name: Verify Python package versions
         run: |
           echo "=== pip ==="
@@ -48,29 +55,54 @@ jobs:
           echo "=== image ID ==="
           docker image inspect email-analyzer:latest --format '{{.Id}}'
 
+      # ============================================
+      # Trivy Scan
+      # ============================================
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: email-analyzer:latest
-          format: table
-          output: trivy-results.txt
+          format: sarif
+          output: ${{ github.workspace }}/trivy-results.sarif
           scanners: vuln
           severity: HIGH,CRITICAL
           exit-code: 0
           ignore-unfixed: true
 
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+      # ============================================
+      # Verify SARIF file exists
+      # ============================================
+      - name: Verify Trivy SARIF report
         if: always()
+        run: |
+          echo "=== Trivy report ==="
+          if [ -f "${GITHUB_WORKSPACE}/trivy-results.sarif" ]; then
+            echo "Trivy SARIF report exists:"
+            ls -lh "${GITHUB_WORKSPACE}/trivy-results.sarif"
+          else
+            echo "ERROR: Trivy SARIF report was not generated."
+            exit 1
+          fi
+
+      # ============================================
+      # Upload results to GitHub Security
+      # ============================================
+      - name: Upload Trivy results to GitHub Security tab
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
 
+      # ============================================
+      # Save report as GitHub Actions artifact
+      # ============================================
       - name: Upload Trivy report
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-report
-          path: trivy-results.txt
+          path: trivy-results.sarif
+          if-no-files-found: warn
 
   # ============================================
   # JOB 2: Docker Bench Security
@@ -101,8 +133,8 @@ jobs:
           fi
 
       - name: Upload Docker Bench Report
-        uses: actions/upload-artifact@v4
         if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: docker-bench-report
           path: docker-bench-report.txt
