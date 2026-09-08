@@ -19,13 +19,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
@@ -67,6 +67,7 @@ jobs:
           exit-code: 1
           ignore-unfixed: true
           skip-files: "**/pip/_vendor/bom.cdx.json"
+
       - name: Upload Trivy results to GitHub Security tab
         if: always()
         uses: github/codeql-action/upload-sarif@v4
@@ -75,7 +76,7 @@ jobs:
 
       - name: Upload Trivy report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trivy-report
           path: ${{ github.workspace }}/trivy-results.sarif
@@ -86,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Run Docker Bench for Security
         run: |
@@ -107,7 +108,7 @@ jobs:
 
       - name: Upload Docker Bench Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: docker-bench-report
           path: docker-bench-report.txt
