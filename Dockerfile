@@ -37,6 +37,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Remove system Python packages to avoid Trivy false positives
+RUN find /usr/local/lib/python3.12/site-packages -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+
 WORKDIR /app
 
 # Copy the isolated Python environment from the builder.
