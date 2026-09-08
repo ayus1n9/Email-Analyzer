@@ -25,11 +25,17 @@ RUN /opt/venv/bin/python -m pip install --no-cache-dir \
 RUN /opt/venv/bin/python -m pip install --no-cache-dir \
     -r requirements.txt
 
-
 # ============================================
 # STAGE 2: Final Image
 # ============================================
 FROM python:3.12-slim AS runtime
+
+RUN rm -rf \
+    /usr/local/lib/python3.12/site-packages/pip \
+    /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+    /usr/local/bin/pip \
+    /usr/local/bin/pip3 \
+    /usr/local/bin/pip3.12
 
 RUN adduser --disabled-password --gecos '' appuser
 
