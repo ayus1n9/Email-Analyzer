@@ -37,15 +37,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Remove system Python packages to avoid Trivy false positives
-RUN find /usr/local/lib/python3.12/site-packages -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+# ========== FIX: Remove system Python packages ==========
+RUN rm -rf /usr/local/lib/python3.12/site-packages/pip* \
+    && rm -rf /usr/local/lib/python3.12/site-packages/msgpack* \
+    && rm -rf /usr/local/lib/python3.12/site-packages/setuptools* \
+    && rm -rf /usr/local/lib/python3.12/site-packages/wheel*
 
 WORKDIR /app
 
-# Copy the isolated Python environment from the builder.
 COPY --from=builder /opt/venv /opt/venv
-
-# Ensure the application uses the isolated environment.
 ENV PATH="/opt/venv/bin:$PATH"
 
 COPY --chown=appuser:appuser . .

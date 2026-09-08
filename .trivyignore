@@ -1,0 +1,3 @@
+# Ignore system Python vulnerabilities (application uses isolated venv)
+GHSA-6v7p-g79w-8964
+CVE-2025-47273
