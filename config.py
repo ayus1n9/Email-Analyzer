@@ -71,19 +71,34 @@ MAX_HOPS_NORMAL = 5
 MAX_HOPS_SUSPICIOUS = 10
 MAX_URLS_TO_DISPLAY = 10
 MAX_SUSPICIOUS_URLS = 5
-DATABASE_PATH = 'data/email_analysis.db'
+DATABASE_PATH = os.environ.get(
+    'DATABASE_PATH',
+    'data/email_analysis.db'
+)
+
 MAX_HISTORY_RECORDS = 1000
 BATCH_UPLOAD_FOLDER = 'uploads/batch'
 MAX_BATCH_FILES = 50
 ALLOWED_BATCH_EXTENSIONS = {'eml'}
 DEFAULT_HISTORY_LIMIT = 50
 DAYS_FOR_TRENDING = 7
+UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+ALLOWED_EXTENSIONS = {'eml'}
+HOST = os.environ.get('FLASK_HOST', '127.0.0.1')
+PORT = int(os.environ.get('FLASK_PORT', '5000'))
+FLASK_ENV = os.environ.get('FLASK_ENV', 'development')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+API_KEY_ADMIN_TOKEN = os.environ.get('API_KEY_ADMIN_TOKEN')
+WEB_ADMIN_TOKEN = os.environ.get('WEB_ADMIN_TOKEN')
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-    UPLOAD_FOLDER = 'uploads'
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
-    ALLOWED_EXTENSIONS = {'eml'}
-    DEBUG = True
-    HOST = os.environ.get('FLASK_HOST', '127.0.0.1')
-    PORT = 5000
+    SECRET_KEY = SECRET_KEY
+    API_KEY_ADMIN_TOKEN = API_KEY_ADMIN_TOKEN
+    WEB_ADMIN_TOKEN = WEB_ADMIN_TOKEN
+    UPLOAD_FOLDER = UPLOAD_FOLDER
+    MAX_CONTENT_LENGTH = MAX_CONTENT_LENGTH
+    ALLOWED_EXTENSIONS = ALLOWED_EXTENSIONS
+    DEBUG = FLASK_ENV == 'development'
+    HOST = HOST
+    PORT = PORT

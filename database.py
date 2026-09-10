@@ -1,9 +1,11 @@
+import os
 import sqlite3
 import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+import config as Config
 
-DATABASE_PATH = 'data/email_analysis.db'
+DATABASE_PATH = Config.DATABASE_PATH
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE_PATH)
@@ -11,12 +13,16 @@ def get_db_connection():
     return conn
 
 def init_database():
+    database_dir = os.path.dirname(os.path.abspath(DATABASE_PATH))
+    if database_dir:
+        os.makedirs(database_dir, exist_ok=True)
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS scans (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT NOT NULL,
+            stored_filename TEXT,
             file_size INTEGER,
             analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             overall_risk TEXT,
@@ -28,6 +34,14 @@ def init_database():
             email_body_preview TEXT
         )
     ''')
+    cursor.execute("PRAGMA table_info(scans)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+    if "stored_filename" not in existing_columns:
+        cursor.execute("ALTER TABLE scans ADD COLUMN stored_filename TEXT")
+        cursor.execute(
+            "UPDATE scans SET stored_filename = filename "
+            "WHERE stored_filename IS NULL"
+        )
     cursor.execute('''
         CREATE INDEX IF NOT EXISTS idx_analyzed_at ON scans(analyzed_at)
     ''')
@@ -37,18 +51,26 @@ def init_database():
     conn.commit()
     conn.close()
 
-def save_scan_result(filename: str, file_size: int, analysis: Dict, headers: Dict, body_preview: str = '') -> int:
+def save_scan_result(
+    filename: str,
+    stored_filename: str,
+    file_size: int,
+    analysis: Dict,
+    headers: Dict,
+    body_preview: str = ''
+) -> int:
     conn = get_db_connection()
     cursor = conn.cursor()
     summary = analysis.get('summary', {})
     cursor.execute('''
         INSERT INTO scans (
-            filename, file_size, overall_risk, risk_score,
+            filename, stored_filename, file_size, overall_risk, risk_score,
             total_findings, max_severity, headers_analyzed, findings,
             email_body_preview
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         filename,
+        stored_filename,
         file_size,
         summary.get('overall_risk', 'unknown'),
         summary.get('risk_score', 0),
@@ -97,7 +119,8 @@ def get_dashboard_stats() -> Dict:
     cursor.execute('SELECT AVG(risk_score) as avg_score FROM scans')
     avg_score = cursor.fetchone()['avg_score'] or 0
     cursor.execute('SELECT * FROM scans ORDER BY analyzed_at DESC LIMIT 1')
-    latest = dict(cursor.fetchone()) if cursor.fetchone() else None
+    latest_row = cursor.fetchone()
+    latest = dict(latest_row) if latest_row else None
     cursor.execute('''
         SELECT DATE(analyzed_at) as date, COUNT(*) as count
         FROM scans
