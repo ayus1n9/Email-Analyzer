@@ -5,3 +5,4 @@ reportlab==4.0.4
 msgpack>=1.2.1
 setuptools>=83.0.0
 wheel>=0.46.2
+gunicorn>=23.0.0
