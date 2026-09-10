@@ -1,4 +1,4 @@
-name: 🔒 Security Scans
+name: Security Scans
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   sast:
-    name: 🛡️ SAST (Bandit)
+    name: SAST (Bandit)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -51,7 +51,7 @@ jobs:
             bandit-report.html
 
   sca:
-    name: 📦 SCA (Safety)
+    name: SCA (Safety)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -92,7 +92,7 @@ jobs:
             safety-report.txt
 
   secrets:
-    name: 🔑 Secrets Detection (TruffleHog)
+    name: Secrets Detection (TruffleHog)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -104,8 +104,6 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
           extra_args: --only-verified
 
   security-badge:
