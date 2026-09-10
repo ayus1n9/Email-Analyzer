@@ -1,74 +1,35 @@
-# Security Policy
+# 🔐 Security Policy
 
-## 🔐 Security Features
+## Supported Versions
+
+| Version | Supported |
+|---------|-----------|
+| 1.0.x   | ✅ Yes    |
+| 0.x.x   | ❌ No     |
+
+## Reporting a Vulnerability
+
+**Do NOT open public issues.** If you discover a security vulnerability, please report it privately by opening a GitHub Security Advisory.
+
+## Security Features
 
 | Feature | Tool | Status |
 |---------|------|--------|
-| SAST (Code Scanning) | Bandit | ✅ Active |
-| SCA (Dependency Scanning) | Safety, Dependabot | ✅ Active |
+| SAST | Bandit | ✅ Active |
+| SCA | Safety, Dependabot | ✅ Active |
 | Secrets Detection | TruffleHog | ✅ Active |
-| Dependency Updates | Dependabot | ✅ Active |
+| Container Scanning | Trivy | ✅ Active |
 
-## 📋 Supported Versions
+## Security Best Practices
 
-| Version | Supported | Security Updates |
-|---------|-----------|------------------|
-| Latest | ✅ Yes | ✅ Yes |
-| v0.5.0  | ✅ Yes | ✅ Yes |
-| v0.4.0  | ✅ Yes | ✅ Yes |
-| v0.3.0  | ✅ Yes | ✅ Yes |
-| v0.2.0  | ✅ Yes | ✅ Yes |
-| v0.1.0  | ✅ Yes | ✅ Yes |
+- ✅ No hardcoded secrets
+- ✅ Input validation
+- ✅ Non-root Docker user
+- ✅ Regular dependency updates
+- ✅ CI/CD security gates
 
-## 🛡️ Reporting a Vulnerability
-
-If you discover a security vulnerability, please:
-
-1. **DO NOT** open a public issue
-2. Email: [your-security-email]
-3. Provide detailed steps to reproduce
-4. 
-
-## 🔒 Security Best Practices
-
-This project follows these security best practices:
-
-- ✅ **SAST**: Code scanned for vulnerabilities with Bandit
-- ✅ **SCA**: Dependencies checked for known vulnerabilities with Safety
-- ✅ **Secrets Detection**: Code scanned for hardcoded secrets with TruffleHog
-- ✅ **Dependency Updates**: Automated updates with Dependabot
-- ✅ **Container Security**: Docker images scanned with Trivy
-- ✅ **Input Validation**: File uploads are validated before processing
-- ✅ **Non-root User**: Docker containers run as non-root
-
-## 📊 Security Status
+## 📊 Security Badges
 
 ![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)
-![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)
 ![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)
-![Secrets Check](https://img.shields.io/badge/Secrets-Not%20Found-brightgreen)
-
-## 🐳 Container Security
-
-### Docker Security Features
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Non-root user | ✅ Enabled | Runs as `appuser`, not root |
-| No new privileges | ✅ Enabled | `security_opt: no-new-privileges` |
-| Dropped capabilities | ✅ Enabled | All capabilities dropped except `NET_BIND_SERVICE` |
-| Read-only filesystem | ✅ Enabled | Only `/tmp` is writable |
-| Health check | ✅ Enabled | HTTP health check endpoint |
-| Trivy scanning | ✅ Enabled | Automated vulnerability scanning |
-
-### Scanning Docker Images
-
-```bash
-# Build the image
-docker build -t email-analyzer:latest .
-
-# Scan with Trivy
-docker run --rm aquasec/trivy image email-analyzer:latest
-
-# Scan with Docker Bench
-docker run --rm docker/docker-bench-security
+![SCA](https://img.shields.io/badge/SCA-No%20Vulnerabilities-brightgreen)

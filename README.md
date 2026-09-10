@@ -75,3 +75,33 @@ cd email-analyzer
 # (Optional) Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+## 🚀 Quick Start
+
+### Docker
+```bash
+docker build -t email-analyzer:latest .
+docker run -p 5000:5000 email-analyzer:latest
+```
+
+### Python
+```bash
+git clone https://github.com/ayus1n9/email-analyzer.git
+cd email-analyzer
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+gunicorn --bind 127.0.0.1:5000 app:app
+```
+
+## 🤝 Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## 📄 License
+MIT License – See [LICENSE](LICENSE)
+
+## ⭐ Support
+⭐ Star this repo if you found it helpful!
+
+[![GitHub stars](https://img.shields.io/github/stars/ayus1n9/email-analyzer.svg?style=social)](https://github.com/ayus1n9/email-analyzer/stargazers)
