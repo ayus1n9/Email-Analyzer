@@ -100,31 +100,13 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Install TruffleHog
-        run: pip install trufflehog
-      
       - name: Scan for secrets
-        id: trufflehog
-        run: |
-          trufflehog filesystem . --only-verified --json > secrets-report.json || true
-          echo "status=success" >> $GITHUB_OUTPUT
-      
-      - name: Check for secrets
-        run: |
-          if [ -s secrets-report.json ]; then
-            echo "🔴 Potential secrets found in the codebase!"
-            cat secrets-report.json
-            exit 1
-          else
-            echo "✅ No secrets found!"
-          fi
-      
-      - name: Upload Secrets Report
-        uses: actions/upload-artifact@v4
-        if: always()
+        uses: trufflesecurity/trufflehog@main
         with:
-          name: secrets-report
-          path: secrets-report.json
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
 
   security-badge:
     name: 🏷️ Security Badge
