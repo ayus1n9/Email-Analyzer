@@ -8,6 +8,7 @@
     <p>Upload multiple .eml files at once</p>
 
     <form action="/batch/analyze" method="post" enctype="multipart/form-data" id="batch-form">
+        <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
         <div class="drop-zone" id="batch-drop-zone">
             <p>📂 Drag & drop multiple .eml files here</p>
             <p>or</p>

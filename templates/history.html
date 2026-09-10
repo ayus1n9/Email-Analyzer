@@ -29,6 +29,7 @@
     <div class="table-actions">
         <a href="/dashboard" class="btn">📊 Dashboard</a>
         <form action="/clear-all" method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
             <button type="submit" class="btn btn-danger" onclick="return confirm('Delete all scans?')">
                 🗑️ Clear All
             </button>
@@ -64,6 +65,7 @@
                     <td>
                         <a href="/scan/{{ scan.id }}" class="btn btn-sm">View</a>
                         <form action="/scan/{{ scan.id }}/delete" method="POST" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this scan?')">🗑️</button>
                         </form>
                     </td>

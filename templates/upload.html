@@ -8,6 +8,7 @@
     <p>Upload a .eml file to analyze for phishing indicators</p>
 
     <form action="/analyze" method="post" enctype="multipart/form-data" id="upload-form">
+        <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
         <div class="drop-zone" id="drop-zone">
             <p>📂 Drag & drop your .eml file here</p>
             <p>or</p>

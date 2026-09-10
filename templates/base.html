@@ -18,7 +18,19 @@
             <a href="/" class="brand">📧 Email Analyzer</a>
             <nav>
                 <a href="/">Upload</a>
-                <a href="/api/analyze">API</a>
+                <a href="/api/v1/docs">API</a>
+
+                {% if session.get('authenticated') %}
+                <form action="{{ url_for('logout') }}" method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
+                    <button type="submit" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1rem;">
+                        Logout
+                    </button>
+                </form>
+                {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                {% endif %}
+
                 <button id="theme-toggle" style="background:none;border:none;color:inherit;cursor:pointer;font-size:1.2rem;">🌙</button>
             </nav>
         </div>

@@ -54,8 +54,9 @@
 
     <div class="actions">
         <a href="/history" class="btn">← Back to History</a>
-        <a href="/export/json/{{ scan.filename }}" class="btn btn-secondary">📄 Export JSON</a>
+        <a href="/export/json/{{ scan.stored_filename }}" class="btn btn-secondary">📄 Export JSON</a>
         <form action="/scan/{{ scan.id }}/delete" method="POST" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ generate_csrf_token() }}">
             <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this scan?')">
                 🗑️ Delete
             </button>
