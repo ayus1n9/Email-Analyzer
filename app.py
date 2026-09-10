@@ -1,15 +1,19 @@
-from flask import Flask, request, render_template, jsonify, redirect, url_for, make_response
+from flask import Flask, request, render_template, jsonify, redirect, url_for, make_response, session
 from werkzeug.utils import secure_filename
 from api import api_bp
 import os
+import uuid
+import logging
+import secrets
+import hmac
+import config as Config
 import json
 from datetime import datetime
 from email_analyzer import (
     read_eml_file,
     split_headers_body,
     parse_headers,
-    analyze_headers,
-    generate_report
+    analyze_headers
 )
 from database import (
     init_database, save_scan_result, get_all_scans,
@@ -17,14 +21,61 @@ from database import (
 )
 
 app = Flask(__name__)
-os.makedirs('data', exist_ok=True)
+logger = logging.getLogger(__name__)
+def generate_csrf_token():
+    token = session.get("csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["csrf_token"] = token
+    return token
+
+def validate_csrf_token(token):
+    expected = session.get("csrf_token")
+    if not expected or not token:
+        return False
+    return hmac.compare_digest(token, expected)
+
+def require_web_auth():
+    if not session.get("authenticated"):
+        return redirect(url_for("login"))
+    return None
+
+app.jinja_env.globals["generate_csrf_token"] = generate_csrf_token
+
+app.config.from_object(Config.Config)
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = Config.FLASK_ENV == "production"
+
+if Config.FLASK_ENV == "production":
+    if not Config.SECRET_KEY:
+        raise RuntimeError(
+            "SECRET_KEY must be set when FLASK_ENV=production"
+        )
+    if not Config.WEB_ADMIN_TOKEN:
+        raise RuntimeError(
+            "WEB_ADMIN_TOKEN must be set when FLASK_ENV=production"
+        )
+os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 init_database()
 app.register_blueprint(api_bp)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-app.config['ALLOWED_EXTENSIONS'] = {'eml'}
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+@app.after_request
+def add_security_headers(response):
+    response.headers.setdefault(
+        "X-Content-Type-Options",
+        "nosniff"
+    )
+    response.headers.setdefault(
+        "X-Frame-Options",
+        "SAMEORIGIN"
+    )
+    response.headers.setdefault(
+        "Referrer-Policy",
+        "strict-origin-when-cross-origin"
+    )
+    return response
 
 try:
     from reportlab.lib.pagesizes import letter
@@ -36,8 +87,13 @@ except ImportError:
 
 @app.route('/export/json/<filename>')
 def export_json(filename):
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if not os.path.exists(filepath):
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+    filepath = get_safe_upload_path(filename)
+    if filepath is None:
+        return "Invalid filename", 400
+    if not os.path.isfile(filepath):
         return "File not found", 404
     content = read_eml_file(filepath)
     if not content:
@@ -54,10 +110,15 @@ def export_json(filename):
 
 @app.route('/export/pdf/<filename>')
 def export_pdf(filename):
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
     if not REPORTLAB_AVAILABLE:
         return "PDF export requires reportlab. Install with: pip install reportlab", 501
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    if not os.path.exists(filepath):
+    filepath = get_safe_upload_path(filename)
+    if filepath is None:
+        return "Invalid filename", 400
+    if not os.path.isfile(filepath):
         return "File not found", 404
     content = read_eml_file(filepath)
     if not content:
@@ -109,8 +170,51 @@ def export_pdf(filename):
     response = make_response(pdf)
     return response
 
+def get_safe_upload_path(filename):
+    safe_filename = secure_filename(filename)
+
+    if not safe_filename or safe_filename != filename:
+        return None
+
+    upload_dir = os.path.abspath(app.config['UPLOAD_FOLDER'])
+    filepath = os.path.abspath(os.path.join(upload_dir, safe_filename))
+
+    if os.path.commonpath([upload_dir, filepath]) != upload_dir:
+        return None
+
+    return filepath
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if session.get('authenticated'):
+        return redirect(url_for('upload_page'))
+    if request.method == 'POST':
+        csrf_token = request.form.get('csrf_token', '')
+        if not validate_csrf_token(csrf_token):
+            return "Invalid CSRF token.", 400
+        token = request.form.get('token', '')
+        if not Config.WEB_ADMIN_TOKEN:
+            return "Web authentication is not configured.", 503
+        if not hmac.compare_digest(token, Config.WEB_ADMIN_TOKEN):
+            return "Invalid credentials.", 401
+        session['authenticated'] = True
+        session['csrf_token'] = secrets.token_urlsafe(32)
+        return redirect(url_for('upload_page'))
+    return render_template('login.html')
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+    csrf_token = request.form.get("csrf_token", "")
+    if not validate_csrf_token(csrf_token):
+        return "Invalid CSRF token.", 400
+    session.clear()
+    return redirect(url_for('login'))
 
 @app.route('/')
 def upload_page():
@@ -118,6 +222,14 @@ def upload_page():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+
+    csrf_token = request.form.get("csrf_token", "")
+    if not validate_csrf_token(csrf_token):
+        return "Invalid CSRF token.", 400
+
     try:
         if 'file' not in request.files:
             return "No file uploaded", 400
@@ -130,7 +242,10 @@ def analyze():
             return "Invalid file type. Please upload .eml file", 400
         
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not filename:
+            return "Invalid filename", 400
+        stored_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
         file.save(filepath)
         
         content = read_eml_file(filepath)
@@ -145,85 +260,42 @@ def analyze():
                              analysis=analysis,
                              headers=headers,
                              filename=filename,
+                             stored_filename=stored_filename,
                              header_lines=h_lines,
                              body_lines=b_lines)
     
-    except Exception as e:
-        print(f"Error during analysis: {str(e)}")
-        return f"Error during analysis: {str(e)}", 500
-
-@app.route('/api/analyze', methods=['GET'])
-def api_info():
-    return jsonify({
-        'name': 'Email Header Analyzer API',
-        'version': '1.0.0',
-        'status': 'active',
-        'endpoints': {
-            'POST /api/analyze': 'Upload and analyze an .eml file',
-            'GET /api/analyze': 'Show API information'
-        },
-        'usage': {
-            'method': 'POST',
-            'content_type': 'multipart/form-data',
-            'parameters': {
-                'file': {
-                    'type': 'file',
-                    'required': True,
-                    'description': '.eml file to analyze'
-                }
-            },
-            'example': 'curl -X POST -F "file=@email.eml" http://localhost:5000/api/analyze'
-        }
-    })
-
-@app.route('/api/analyze', methods=['POST'])
-def api_analyze():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file uploaded'}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Please upload .eml file'}), 400
-        
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        content = read_eml_file(filepath)
-        if not content:
-            return jsonify({'error': 'Error reading file'}), 500
-        
-        header, body, h_lines, b_lines = split_headers_body(content)
-        headers = parse_headers(header)
-        analysis = analyze_headers(headers, body)
-        
-        return jsonify({
-            'status': 'success',
-            'filename': filename,
-            'analysis': analysis
-        })
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        logger.exception("Unexpected error while analyzing uploaded email")
+        return "An internal error occurred while analyzing the email.", 500
 
 @app.route('/history')
 def view_history():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
     limit = request.args.get('limit', 50, type=int)
+    if limit < 1 or limit > Config.MAX_HISTORY_RECORDS:
+        return (
+            f"limit must be between 1 and {Config.MAX_HISTORY_RECORDS}",
+            400
+        )
     scans = get_all_scans(limit)
     stats = get_dashboard_stats()
     return render_template('history.html', scans=scans, stats=stats)
 
 @app.route('/dashboard')
 def view_dashboard():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
     stats = get_dashboard_stats()
     return render_template('dashboard.html', stats=stats)
 
 @app.route('/scan/<int:scan_id>')
 def view_scan(scan_id):
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
     scan = get_scan_by_id(scan_id)
     if not scan:
         return "Scan not found", 404
@@ -234,6 +306,12 @@ def view_scan(scan_id):
 
 @app.route('/scan/<int:scan_id>/delete', methods=['POST'])
 def delete_scan_route(scan_id):
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+    csrf_token = request.form.get("csrf_token", "")
+    if not validate_csrf_token(csrf_token):
+        return "Invalid CSRF token.", 400
     deleted = delete_scan(scan_id)
     if not deleted:
         return "Scan not found", 404
@@ -241,6 +319,12 @@ def delete_scan_route(scan_id):
 
 @app.route('/clear-all', methods=['POST'])
 def clear_all_scans_route():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+    csrf_token = request.form.get("csrf_token", "")
+    if not validate_csrf_token(csrf_token):
+        return "Invalid CSRF token.", 400
     count = clear_all_scans()
     return redirect(url_for('view_history'))
 
@@ -250,9 +334,20 @@ def batch_upload_page():
 
 @app.route('/batch/analyze', methods=['POST'])
 def batch_analyze():
+    auth_response = require_web_auth()
+    if auth_response:
+        return auth_response
+    csrf_token = request.form.get("csrf_token", "")
+    if not validate_csrf_token(csrf_token):
+        return "Invalid CSRF token.", 400
     if 'files' not in request.files:
         return "No files uploaded", 400
     files = request.files.getlist('files')
+    if len(files) > Config.MAX_BATCH_FILES:
+        return (
+            f"Too many files. Maximum allowed is {Config.MAX_BATCH_FILES}.",
+            400
+        )
     if not files or all(f.filename == '' for f in files):
         return "No files selected", 400
     results = []
@@ -262,7 +357,13 @@ def batch_analyze():
         if not allowed_file(file.filename):
             continue
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        if not filename:
+            return "Invalid filename", 400
+
+        stored_filename = f"{uuid.uuid4().hex}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
+
         file.save(filepath)
         content = read_eml_file(filepath)
         if content:
@@ -271,6 +372,7 @@ def batch_analyze():
             analysis = analyze_headers(headers, body)
             save_scan_result(
                 filename=filename,
+                stored_filename=stored_filename,
                 file_size=os.path.getsize(filepath),
                 analysis=analysis,
                 headers=headers,
@@ -291,7 +393,10 @@ def batch_analyze():
 
 if __name__ == '__main__':
     env = os.environ.get('FLASK_ENV', 'development')
-    debug_mode = env == 'development'
+    if env == 'production':
+        raise RuntimeError(
+            'Production mode must be started with Gunicorn, not Flask dev server.'
+        )
     host = os.environ.get('FLASK_HOST', '127.0.0.1')
     port = int(os.environ.get('FLASK_PORT', 5000))
-    app.run(debug=debug_mode, host=host, port=port)
+    app.run(debug=True, host=host, port=port)
