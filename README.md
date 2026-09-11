@@ -2,10 +2,10 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-30%20passing-brightgreen.svg)](https://github.com/ayus1n9/email-analyzer)
-[![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
-[![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
-[![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
+[![Tests](https://img.shields.io/badge/tests-30%20passing-brightgreen.svg)](https://github.com/ayus1n9/Email-Analyzer)
+[![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)](https://github.com/ayus1n9/Email-Analyzer/actions)
+[![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)](https://github.com/ayus1n9/Email-Analyzer/actions)
+[![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)](https://github.com/ayus1n9/Email-Analyzer/actions)
 
 > **A Python tool to parse and analyze email headers (.eml files) for phishing detection, spoofing attempts, and security threats.**
 
@@ -111,10 +111,10 @@ The repository is intended to be developed and tested with security checks runni
 
 ```bash
 # Clone the repository
-git clone https://github.com/ayus1n9/email-analyzer.git
+git clone https://github.com/ayus1n9/Email-Analyzer.git
 
 # Navigate to project directory
-cd email-analyzer
+cd Email-Analyzer
 
 # Create virtual environment
 python -m venv venv
@@ -135,13 +135,13 @@ pip install -r requirements.txt
 The production container expects the required security secrets to be provided through environment variables.
 
 ```bash
-docker build -t email-analyzer:latest .
+docker build -t Email-Analyzer:latest .
 
 docker run -p 5000:5000 \
   -e FLASK_ENV=production \
   -e SECRET_KEY='replace-with-a-strong-secret' \
   -e WEB_ADMIN_TOKEN='replace-with-a-strong-admin-token' \
-  email-analyzer:latest
+  Email-Analyzer:latest
 ```
 
 Then open:
@@ -151,8 +151,8 @@ Then open:
 ### Python
 
 ```bash
-git clone https://github.com/ayus1n9/email-analyzer.git
-cd email-analyzer
+git clone https://github.com/ayus1n9/Email-Analyzer.git
+cd Email-Analyzer
 
 python -m venv venv
 source venv/bin/activate
@@ -193,4 +193,4 @@ MIT License – See [LICENSE](LICENSE)
 
 ⭐ Star this repo if you found it helpful!
 
-[![GitHub stars](https://img.shields.io/github/stars/ayus1n9/email-analyzer.svg?style=social)](https://github.com/ayus1n9/email-analyzer/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/ayus1n9/Email-Analyzer.svg?style=social)](https://github.com/ayus1n9/Email-Analyzer/stargazers)
