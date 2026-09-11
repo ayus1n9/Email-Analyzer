@@ -2,10 +2,10 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-30%20passing-brightgreen.svg)](https://github.com/ayus1n9/email-header-analyzer)
-[![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
-[![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
-[![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)](https://github.com/ayus1n9/email-header-analyzer/actions)
+[![Tests](https://img.shields.io/badge/tests-30%20passing-brightgreen.svg)](https://github.com/ayus1n9/email-analyzer)
+[![Security Scan](https://img.shields.io/badge/Security%20Scan-Passing-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
+[![Dependency Status](https://img.shields.io/badge/Dependencies-Updated-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
+[![SAST](https://img.shields.io/badge/SAST-Passing-brightgreen)](https://github.com/ayus1n9/email-analyzer/actions)
 
 > **A Python tool to parse and analyze email headers (.eml files) for phishing detection, spoofing attempts, and security threats.**
 
@@ -111,7 +111,7 @@ The repository is intended to be developed and tested with security checks runni
 
 ```bash
 # Clone the repository
-git clone https://github.com/ayus1n9/email-header-analyzer.git
+git clone https://github.com/ayus1n9/email-analyzer.git
 
 # Navigate to project directory
 cd email-analyzer
@@ -151,7 +151,7 @@ Then open:
 ### Python
 
 ```bash
-git clone https://github.com/ayus1n9/email-header-analyzer.git
+git clone https://github.com/ayus1n9/email-analyzer.git
 cd email-analyzer
 
 python -m venv venv
@@ -193,4 +193,4 @@ MIT License – See [LICENSE](LICENSE)
 
 ⭐ Star this repo if you found it helpful!
 
-[![GitHub stars](https://img.shields.io/github/stars/ayus1n9/email-header-analyzer.svg?style=social)](https://github.com/ayus1n9/email-header-analyzer/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/ayus1n9/email-analyzer.svg?style=social)](https://github.com/ayus1n9/email-analyzer/stargazers)
